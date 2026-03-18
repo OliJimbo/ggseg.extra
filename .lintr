@@ -1,2 +1,2 @@
 
-exclusions: list("inst/rstudio/templates")
+exclusions: list("inst/rstudio/templates", "vignettes/*.qmd")

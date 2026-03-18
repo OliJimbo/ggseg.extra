@@ -39,6 +39,7 @@ jobs:
         with:
           extra-packages: |
             any::pkgdown,
+            any::quarto,
             github::drmowinckels/freesurfer@refactor,
             local::.
           needs: website

@@ -72,9 +72,11 @@ Suggests:
     spelling,
     testthat (>= 3.0.0),
     tidyr,
+    quarto,
     withr
 VignetteBuilder:
-    knitr
+    knitr,
+    quarto
 Encoding: UTF-8
 Language: en-US
 Roxygen: list(markdown = TRUE)
