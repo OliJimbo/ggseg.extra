@@ -1,27 +1,15 @@
-#' {GGSEG} atlas
+#' {GGSEG} Brain Atlas
 #'
-#' Add a short description of this atlas.
+#' A brain atlas for the {GGSEG} parcellation scheme.
 #'
-#' @docType data
-#' @name {GGSEG}
-#' @keywords datasets
-#' @family ggseg_atlases ggseg3d_atlases
-#' @references Add reference to the atlas description paper. make sure to add the url to pubmed
-#'     (\href{https://pubmed.ncbi.nlm.nih.gov/xxxxx/}{PubMed})
-#'     
-#' \itemize{
-#'  \item{{GGSEG}}{ - {GGSEG} atlas}
-#'  \item{{GGSEG}_3d}{ - {GGSEG} 3d mesh atlas}
-#'}
+#' @references
+#' TODO: Add the original publication reference here.
 #'
-#' @import ggseg
-#' @import ggseg3d
-#' @rdname {GGSEG}
+#' @return A [ggseg.formats::ggseg_atlas] object.
+#' @export
+#' @family ggseg_atlases
+#' @import ggseg.formats
 #' @examples
-#' data({GGSEG})
-#' data({GGSEG}_3d)
-"{GGSEG}"
-
-#' @rdname {GGSEG}
-"{GGSEG}_3d"
-
+#' {GGSEG}()
+# fmt: skip
+{GGSEG} <- function() .{GGSEG}

@@ -1,64 +1,99 @@
-url: https://ggseg.github.io/ggsegExtra/
+url: https://ggsegverse.github.io/ggseg.extra/
 
 template:
-  bootstrap: 5
-  brand: _brand.yml
+  package: ggseg.docs
 
 navbar:
   structure:
     left: [intro, articles, reference, news]
-    right: [search, github]
+    right: [search, github, lightswitch]
+  components:
+    github:
+      icon: fa-github
+      href: https://github.com/ggsegverse/ggseg.extra
+      aria-label: GitHub
+    articles:
+      text: Articles
+      menu:
+        - text: Getting Started
+        - text: Introduction
+          href: articles/ggseg.extra.html
+        - text: Atlas Creation Workflows
+          href: articles/atlas-workflows.html
+        - text: System Setup
+          href: articles/system-setup.html
+        - text: -------
+        - text: How-To
+        - text: Pipeline Configuration
+          href: articles/pipeline-configuration.html
+        - text: Post-Processing
+          href: articles/post-processing.html
+        - text: -------
+        - text: "Tutorials: Creating Atlases"
+        - text: Cortical Atlas
+          href: articles/tutorial-cortical-atlas.html
+        - text: Neuromaps Atlas
+          href: articles/tutorial-neuromaps-atlas.html
+        - text: Subcortical Atlas
+          href: articles/tutorial-subcortical-atlas.html
+        - text: Whole-Brain Atlas
+          href: articles/tutorial-wholebrain-atlas.html
+        - text: Tract Atlas
+          href: articles/tutorial-tract-atlas.html
+        - text: Label Atlas
+          href: articles/tutorial-label-atlas.html
+        - text: -------
+        - text: Legacy & Contributing
+        - text: Legacy Conversion
+          href: articles/legacy-conversion.html
+        - text: Contributing
+          href: articles/contributing.html
 
 articles:
   - title: Getting Started
     navbar: ~
     contents:
-      - ggsegExtra
-      - system_setup
+      - ggseg.extra
+      - atlas-workflows
+      - system-setup
 
-  - title: Creating Atlases
-    desc: Step-by-step guides for creating custom brain atlases
+  - title: How-To
+    desc: Understanding package functionality
     contents:
-      - customatlas3d
-      - customatlas
+      - pipeline-configuration
+      - post-processing
 
-  - title: Tutorials
-    desc: Complete worked examples
+  - title: "Tutorials: Creating Atlases"
+    desc: Step-by-step atlas creation with full pipelines
     contents:
-      - createdkt
-      - createaseg
+      - tutorial-cortical-atlas
+      - tutorial-neuromaps-atlas
+      - tutorial-subcortical-atlas
+      - tutorial-wholebrain-atlas
+      - tutorial-tract-atlas
+      - tutorial-label-atlas
 
-  - title: Contributing
+  - title: Legacy & Contributing
     contents:
-      - ggsegrepo
+      - legacy-conversion
+      - contributing
 
 reference:
-  - title: Atlas Discovery & Installation
-    desc: Find and install ggseg atlas packages
+  - title: Create Brain Atlases
+    desc: Functions to create brain atlases for ggseg and ggseg3d
     contents:
-      - ggseg_atlas_repos
-      - install_ggseg_atlas
-      - install_ggseg_atlas_all
+      - starts_with("create_")
 
-  - title: Create 3D Atlases
-    desc: Functions to create ggseg3d-compatible atlases
+  - title: Atlas Manipulation
+    desc: Functions to manipulate and manage brain atlases
     contents:
-      - make_aparc_2_3datlas
-      - make_volumetric_2_3datlas
+      - starts_with("atlas_")
 
-  - title: Create 2D Atlases
-    desc: Functions to create ggseg-compatible atlases
+  - title: Atlas Repository
+    desc: Create and manage ggseg atlas packages
     contents:
-      - make_ggseg3d_2_ggseg
-      - make_volumetric_ggseg
-      - make_palette_ggseg
-
-  - title: Volume & Surface Conversion
-    desc: Convert between volumetric and surface representations
-    contents:
-      - atlas_vol2surf
-      - atlas_vol2label
-      - mri_vol2label
+      - setup_atlas_repo
+      - setup_sitrep
 
   - title: Color Tables
     desc: Read, write, and manipulate FreeSurfer color tables
@@ -66,28 +101,19 @@ reference:
       - read_ctab
       - write_ctab
       - is_ctab
-      - atlas_lab2ctab
+      - get_ctab
 
-  - title: Mesh Functions
-    desc: Work with 3D mesh data
+  - title: Utilities
+    desc: General package utilities
     contents:
-      - get_mesh
-      - aparc_2_mesh
-      - surf2ply
-      - curv2ply
-
-  - title: FreeSurfer Wrappers
-    desc: R wrappers for FreeSurfer command-line tools
-    contents:
-      - mris_label2annot
-      - mri_annotation2label
-      - mris_ca_label
+      - read_annotation_data
+      - read_cifti_annotation
+      - read_gifti_annotation
+      - read_neuromaps_annotation
+      - read_neuromaps_volume
+      - convert_legacy_brain_atlas
+      - read_tractography
       - mri_surf2surf_rereg
-      - subject_2_ascii
-
-  - title: FreeSurfer Constants
-    desc: Available FreeSurfer surfaces and curvatures
-    contents:
-      - fs_surfaces
-      - fs_curvatures
-      - fs_nofixcurv
+      - get_verbose
+      - is_verbose
+      - as_verbosity

@@ -20,4 +20,11 @@ orca-build
 package-lock.json
 .claude/
 _brand.yml
-
+.*\.pdf$
+^\.lintr$
+^vignettes/tutorial-.*\.Rmd$
+^vignettes/.*\.Rmd\.orig$
+^vignettes/\.quarto$
+^vignettes/atlas-workflows\.qmd$
+^figure$
+^cran-comments\.md$
