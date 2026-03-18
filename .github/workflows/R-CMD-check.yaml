@@ -32,7 +32,7 @@ jobs:
       RGL_USE_NULL: true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload check results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ runner.os }}-r${{ matrix.config.r }}-results
           path: check
