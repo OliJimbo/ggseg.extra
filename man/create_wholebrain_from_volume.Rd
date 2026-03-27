@@ -86,7 +86,7 @@ Default 0.5.}
 produce simpler shapes with fewer vertices (typical range: 0.1--2).
 Passed to \code{\link[sf:geos_unary]{sf::st_simplify()}}.
 If not specified, uses \code{options("ggseg.extra.tolerance")} or the
-\code{GGSEG_EXTRA_TOLERANCE} environment variable. Default is 1.}
+\code{GGSEG_EXTRA_TOLERANCE} environment variable. Default is 0.5.}
 
 \item{smoothness}{Smoothing factor for 2D contours. Higher values produce
 smoother region boundaries (typical range: 3--15). Passed to

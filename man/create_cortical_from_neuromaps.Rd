@@ -16,34 +16,24 @@ create_cortical_from_neuromaps(
   hemisphere = c("rh", "lh"),
   views = c("lateral", "medial", "superior", "inferior"),
   tolerance = NULL,
-  smoothness = NULL,
-  snapshot_dim = NULL,
+  smooth_refinements = NULL,
   cleanup = NULL,
   verbose = get_verbose(),
-  skip_existing = NULL,
-  steps = NULL
+  skip_existing = NULL
 )
 }
 \arguments{
-\item{source}{Neuromaps source identifier (e.g., \code{"schaefer"}).
-See \code{\link[neuromapr:neuromaps_available]{neuromapr::neuromaps_available()}} for options.}
+\item{source}{Neuromaps source identifier (e.g., \code{"schaefer"}).}
 
 \item{desc}{Neuromaps descriptor key (e.g., \code{"400Parcels7Networks"}).}
 
 \item{space}{Coordinate space. Defaults to \code{"fsaverage"}.}
 
-\item{density}{Surface vertex density. Defaults to \code{"10k"}
-(fsaverage5, 10,242 vertices).}
+\item{density}{Surface vertex density. Defaults to \code{"10k"}.}
 
-\item{label_table}{Optional data.frame mapping parcel IDs to region
-names. Must have columns \code{id} (integer) and \code{region} (character).
-Optionally include \code{colour} (hex string). When \code{NULL}, regions are
-auto-named.}
+\item{label_table}{Optional data.frame mapping parcel IDs to region names.}
 
-\item{n_bins}{Number of quantile bins for continuous brain maps.
-When \code{NULL} (default), auto-detected via Sturges' rule
-(\code{1 + log2(n)}, clamped to 5--20). Ignored for integer parcellation
-data. See \code{\link[=read_neuromaps_annotation]{read_neuromaps_annotation()}}.}
+\item{n_bins}{Number of quantile bins for continuous brain maps.}
 
 \item{atlas_name}{Name for the atlas. If NULL, derived from the input
 filename.}
@@ -60,18 +50,13 @@ contours). Defaults to \code{\link[=tempdir]{tempdir()}}.}
 produce simpler shapes with fewer vertices (typical range: 0.1--2).
 Passed to \code{\link[sf:geos_unary]{sf::st_simplify()}}.
 If not specified, uses \code{options("ggseg.extra.tolerance")} or the
-\code{GGSEG_EXTRA_TOLERANCE} environment variable. Default is 1.}
+\code{GGSEG_EXTRA_TOLERANCE} environment variable. Default is 0.5.}
 
-\item{smoothness}{Smoothing factor for 2D contours. Higher values produce
-smoother region boundaries (typical range: 3--15). Passed to
-\code{\link[smoothr:smooth]{smoothr::smooth()}}. If not specified, uses
-\code{options("ggseg.extra.smoothness")} or the \code{GGSEG_EXTRA_SMOOTHNESS}
-environment variable. Default is 5.}
-
-\item{snapshot_dim}{Width and height (in pixels) for brain surface
-snapshots. Higher values capture more detail for dense parcellations.
-If not specified, uses \code{options("ggseg.extra.snapshot_dim")} or the
-\code{GGSEG_EXTRA_SNAPSHOT_DIM} environment variable. Default is 800.}
+\item{smooth_refinements}{Number of Chaikin corner-cutting refinements
+to apply to 2D polygons. Higher values produce smoother region
+boundaries (typical range: 0--3). 0 disables smoothing.
+If not specified, uses \code{options("ggseg.extra.smooth_refinements")} or the
+\code{GGSEG_EXTRA_SMOOTH_REFINEMENTS} environment variable. Default is 2.}
 
 \item{cleanup}{Remove intermediate files after atlas creation. If not
 specified, uses \code{options("ggseg.extra.cleanup")} or the \code{GGSEG_EXTRA_CLEANUP}
@@ -87,10 +72,6 @@ environment variable.}
 allowing interrupted atlas creation to resume. If not specified, uses
 \code{options("ggseg.extra.skip_existing")} or the \code{GGSEG_EXTRA_SKIP_EXISTING}
 environment variable. Default is TRUE.}
-
-\item{steps}{Which pipeline steps to run.
-See \code{\link[=create_cortical_from_annotation]{create_cortical_from_annotation()}} for step descriptions.
-Use \code{steps = 1} for 3D-only atlas.}
 }
 \value{
 A \code{ggseg_atlas} object.
@@ -104,24 +85,13 @@ is downloaded via \code{\link[neuromapr:fetch_neuromaps_annotation]{neuromapr::f
 Supports both surface (\code{.func.gii}) and volume (\code{.nii}/\code{.nii.gz})
 annotations. Volume annotations in MNI152 space are automatically
 projected to fsaverage5 via FreeSurfer's \code{mri_vol2surf}.
-
-Continuous brain maps (PET, gene expression, etc.) are discretized
-into quantile bins via \code{n_bins}. Integer parcellation maps use
-vertex value 0 as medial wall.
-
-Defaults to fsaverage5 surface space (\code{space = "fsaverage"},
-\code{density = "10k"}, 10,242 vertices per hemisphere). Surface
-annotations need no FreeSurfer for 3D-only atlases (\code{steps = 1});
-volume annotations always require FreeSurfer.
 }
 \examples{
 \dontrun{
 atlas <- create_cortical_from_neuromaps(
   source = "abagen",
   desc = "genepc1",
-  n_bins = 7,
-  steps = 1
+  n_bins = 7
 )
-ggseg3d::ggseg3d(atlas = atlas)
 }
 }
