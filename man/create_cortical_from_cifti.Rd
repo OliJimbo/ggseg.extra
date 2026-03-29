@@ -11,12 +11,10 @@ create_cortical_from_cifti(
   hemisphere = c("rh", "lh"),
   views = c("lateral", "medial", "superior", "inferior"),
   tolerance = NULL,
-  smoothness = NULL,
-  snapshot_dim = NULL,
+  smooth_refinements = NULL,
   cleanup = NULL,
   verbose = get_verbose(),
-  skip_existing = NULL,
-  steps = NULL
+  skip_existing = NULL
 )
 }
 \arguments{
@@ -39,16 +37,11 @@ Passed to \code{\link[sf:geos_unary]{sf::st_simplify()}}.
 If not specified, uses \code{options("ggseg.extra.tolerance")} or the
 \code{GGSEG_EXTRA_TOLERANCE} environment variable. Default is 1.}
 
-\item{smoothness}{Smoothing factor for 2D contours. Higher values produce
-smoother region boundaries (typical range: 3--15). Passed to
-\code{\link[smoothr:smooth]{smoothr::smooth()}}. If not specified, uses
-\code{options("ggseg.extra.smoothness")} or the \code{GGSEG_EXTRA_SMOOTHNESS}
-environment variable. Default is 5.}
-
-\item{snapshot_dim}{Width and height (in pixels) for brain surface
-snapshots. Higher values capture more detail for dense parcellations.
-If not specified, uses \code{options("ggseg.extra.snapshot_dim")} or the
-\code{GGSEG_EXTRA_SNAPSHOT_DIM} environment variable. Default is 800.}
+\item{smooth_refinements}{Number of Chaikin corner-cutting refinements
+to apply to 2D polygons. Higher values produce smoother region
+boundaries (typical range: 0--3). 0 disables smoothing.
+If not specified, uses \code{options("ggseg.extra.smooth_refinements")} or the
+\code{GGSEG_EXTRA_SMOOTH_REFINEMENTS} environment variable. Default is 2.}
 
 \item{cleanup}{Remove intermediate files after atlas creation. If not
 specified, uses \code{options("ggseg.extra.cleanup")} or the \code{GGSEG_EXTRA_CLEANUP}
@@ -64,10 +57,6 @@ environment variable.}
 allowing interrupted atlas creation to resume. If not specified, uses
 \code{options("ggseg.extra.skip_existing")} or the \code{GGSEG_EXTRA_SKIP_EXISTING}
 environment variable. Default is TRUE.}
-
-\item{steps}{Which pipeline steps to run.
-See \code{\link[=create_cortical_from_annotation]{create_cortical_from_annotation()}} for step descriptions.
-Use \code{steps = 1} for 3D-only atlas.}
 }
 \value{
 A \code{ggseg_atlas} object.
@@ -76,17 +65,12 @@ A \code{ggseg_atlas} object.
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
 Build a brain atlas from a CIFTI dense label file (\code{.dlabel.nii}).
-A single CIFTI file contains data for both hemispheres. The file must
-be in fsaverage5 space (10,242 vertices per hemisphere).
-
-No FreeSurfer installation is needed for 3D-only atlases (\code{steps = 1}).
+The file must be in fsaverage5 space (10,242 vertices per hemisphere).
 }
 \examples{
 \dontrun{
 atlas <- create_cortical_from_cifti(
-  cifti_file = "parcellation.dlabel.nii",
-  steps = 1
+  cifti_file = "parcellation.dlabel.nii"
 )
-ggseg3d::ggseg3d(atlas = atlas)
 }
 }

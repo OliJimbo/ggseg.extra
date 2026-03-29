@@ -7,7 +7,7 @@
 make_brain_meshes(
   subject = "fsaverage5",
   surfaces = c("inflated", "white", "pial"),
-  subjects_dir = fs_subj_dir()
+  subjects_dir = freesurfer::fs_subj_dir()
 )
 }
 \arguments{

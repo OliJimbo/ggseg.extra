@@ -25,6 +25,7 @@ skip_if_not_installed <- function(pkg) {
 
 # Helper to skip tests requiring FreeSurfer
 skip_if_no_freesurfer <- function() {
+  testthat::skip_if_not_installed("freesurfer")
   if (!freesurfer::have_fs()) {
     testthat::skip("FreeSurfer not available")
   }
@@ -147,12 +148,7 @@ mock_sf_polygon <- function(label = "test", view = "lateral") {
 # nolint next: object_length_linter.
 mock_cortical_pipeline_bindings <- function(captured = NULL) {
   mocks <- list(
-    cortical_brain_snapshots = function(...) NULL,
-    cortical_isolate_regions = function(...) NULL,
-    extract_contours = function(...) NULL,
-    smooth_contours = function(...) NULL,
-    reduce_vertex = function(...) NULL,
-    cortical_build_sf = function(...) mock_sf_polygon(),
+    cortical_build_sf_projected = function(...) mock_sf_polygon(),
     ggseg_atlas = function(...) structure(list(...), class = "ggseg_atlas"),
     ggseg_data_cortical = function(...) list(...),
     warn_if_large_atlas = function(...) NULL,
@@ -166,7 +162,7 @@ mock_cortical_pipeline_bindings <- function(captured = NULL) {
       mocks[[fn_name]] <- (function(e, nm) {
         function(...) {
           e[[nm]] <<- list(...)
-          if (nm == "cortical_build_sf") {
+          if (nm == "cortical_build_sf_projected") {
             return(mock_sf_polygon())
           }
           if (nm %in% c("ggseg_atlas", "ggseg_data_cortical")) {
@@ -180,6 +176,7 @@ mock_cortical_pipeline_bindings <- function(captured = NULL) {
 
   mocks
 }
+
 
 mock_subcort_dirs <- function() {
   pf <- parent.frame()

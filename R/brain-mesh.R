@@ -15,12 +15,11 @@
 #' @return list with vertices (data.frame with x, y, z) and
 #'   faces (data.frame with i, j, k)
 #' @keywords internal
-#' @importFrom freesurfer fs_subj_dir
 read_fs_mesh <- function(
   subject = "fsaverage5",
   hemisphere = c("lh", "rh"),
   surface = c("inflated", "white", "pial"),
-  subjects_dir = fs_subj_dir()
+  subjects_dir = freesurfer::fs_subj_dir()
 ) {
   check_fs(abort = TRUE)
 
@@ -113,7 +112,7 @@ read_fs_mesh <- function(
 make_brain_meshes <- function(
   subject = "fsaverage5",
   surfaces = c("inflated", "white", "pial"),
-  subjects_dir = fs_subj_dir()
+  subjects_dir = freesurfer::fs_subj_dir()
 ) {
   check_fs(abort = TRUE)
 

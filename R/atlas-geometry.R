@@ -5,7 +5,6 @@
 #' @importFrom dplyr bind_rows group_by summarise
 #' @importFrom furrr future_map furrr_options
 #' @importFrom progressr progressor
-#' @importFrom terra rast global
 #' @importFrom sf st_is_empty st_combine st_as_sf st_make_valid
 #' @importFrom tools file_path_sans_ext
 extract_contours <- function(
@@ -15,6 +14,9 @@ extract_contours <- function(
   step = "",
   vertex_size_limits = NULL
 ) {
+  rlang::check_installed("terra",
+    reason = "for contour extraction from raster images"
+  )
   if (verbose) {
     cli::cli_progress_step("{step} Extracting contours")
   }
@@ -24,8 +26,8 @@ extract_contours <- function(
 
   max_val <- 0
   for (f in regions[seq_len(min(10, length(regions)))]) {
-    r <- suppressWarnings(rast(f))
-    m <- global(r, fun = "max", na.rm = TRUE)[1, 1]
+    r <- suppressWarnings(terra::rast(f))
+    m <- terra::global(r, fun = "max", na.rm = TRUE)[1, 1]
     if (m > max_val) {
       max_val <- m
     }
@@ -42,7 +44,7 @@ extract_contours <- function(
   contourobjs <- safe_future_map(
     regions,
     function(region_file) {
-      r <- suppressWarnings(rast(region_file))
+      r <- suppressWarnings(terra::rast(region_file))
       result <- get_contours(
         r,
         max_val = max_val,
@@ -79,13 +81,15 @@ extract_contours <- function(
 
 
 #' @noRd
-#' @importFrom smoothr smooth
 smooth_contours <- function(
   dir,
   smoothness,
   step,
   verbose = get_verbose() # nolint: object_usage_linter
 ) {
+  rlang::check_installed("smoothr",
+    reason = "for polygon smoothing"
+  )
   load_rda(file.path(dir, "contours.rda"))
 
   if (verbose) {
@@ -100,7 +104,8 @@ smooth_contours <- function(
     return(invisible(contours))
   }
 
-  contours <- smooth(contours, method = "ksmooth", smoothness = smoothness)
+  contours <- smoothr::smooth(contours, method = "ksmooth",
+                              smoothness = smoothness)
   contours <- filter_valid_geometries(contours)
 
   save(contours, file = file.path(dir, "contours_smoothed.rda"))
@@ -212,7 +217,6 @@ filter_valid_geometries <- function(sf_obj) {
 #'
 #' @return A modified `ggseg_atlas` with smoothed sf geometry.
 #' @export
-#' @importFrom smoothr smooth
 #' @importFrom sf st_make_valid
 #'
 #' @examples
@@ -221,6 +225,9 @@ filter_valid_geometries <- function(sf_obj) {
 #' plot(atlas)
 #' }
 atlas_smooth <- function(atlas, smoothness = 5) {
+  rlang::check_installed("smoothr",
+    reason = "for polygon smoothing"
+  )
   if (is.null(atlas$data$sf)) {
     cli::cli_warn("Atlas has no sf data, nothing to smooth")
     return(atlas)

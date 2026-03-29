@@ -11,12 +11,10 @@ create_cortical_from_labels(
   output_dir = NULL,
   views = c("lateral", "medial"),
   tolerance = NULL,
-  smoothness = NULL,
-  snapshot_dim = NULL,
+  smooth_refinements = NULL,
   cleanup = NULL,
   verbose = get_verbose(),
-  skip_existing = NULL,
-  steps = NULL
+  skip_existing = NULL
 )
 }
 \arguments{
@@ -27,9 +25,7 @@ FreeSurfer naming: \verb{\{hemi\}.\{regionname\}.label} (e.g., \code{lh.motor.la
 filename.}
 
 \item{input_lut}{Path to a color lookup table (LUT) file, or a data.frame
-with columns \code{region} and colour columns (R, G, B or hex).
-Use this to provide region names and colours. If NULL, names are derived
-from filenames and the atlas will have no palette.}
+with columns \code{region} and colour columns (R, G, B or hex).}
 
 \item{output_dir}{Directory to store intermediate files (screenshots, masks,
 contours). Defaults to \code{\link[=tempdir]{tempdir()}}.}
@@ -43,16 +39,11 @@ Passed to \code{\link[sf:geos_unary]{sf::st_simplify()}}.
 If not specified, uses \code{options("ggseg.extra.tolerance")} or the
 \code{GGSEG_EXTRA_TOLERANCE} environment variable. Default is 1.}
 
-\item{smoothness}{Smoothing factor for 2D contours. Higher values produce
-smoother region boundaries (typical range: 3--15). Passed to
-\code{\link[smoothr:smooth]{smoothr::smooth()}}. If not specified, uses
-\code{options("ggseg.extra.smoothness")} or the \code{GGSEG_EXTRA_SMOOTHNESS}
-environment variable. Default is 5.}
-
-\item{snapshot_dim}{Width and height (in pixels) for brain surface
-snapshots. Higher values capture more detail for dense parcellations.
-If not specified, uses \code{options("ggseg.extra.snapshot_dim")} or the
-\code{GGSEG_EXTRA_SNAPSHOT_DIM} environment variable. Default is 800.}
+\item{smooth_refinements}{Number of Chaikin corner-cutting refinements
+to apply to 2D polygons. Higher values produce smoother region
+boundaries (typical range: 0--3). 0 disables smoothing.
+If not specified, uses \code{options("ggseg.extra.smooth_refinements")} or the
+\code{GGSEG_EXTRA_SMOOTH_REFINEMENTS} environment variable. Default is 2.}
 
 \item{cleanup}{Remove intermediate files after atlas creation. If not
 specified, uses \code{options("ggseg.extra.cleanup")} or the \code{GGSEG_EXTRA_CLEANUP}
@@ -68,49 +59,23 @@ environment variable.}
 allowing interrupted atlas creation to resume. If not specified, uses
 \code{options("ggseg.extra.skip_existing")} or the \code{GGSEG_EXTRA_SKIP_EXISTING}
 environment variable. Default is TRUE.}
-
-\item{steps}{Which pipeline steps to run. Default NULL runs all steps.
-Steps are:
-\itemize{
-\item 1: Read label files and build 3D atlas
-\item 2: Take full brain snapshots
-\item 3: Take region snapshots
-\item 4: Isolate regions from images
-\item 5: Extract contours
-\item 6: Smooth contours
-\item 7: Reduce vertices
-\item 8: Build final atlas with 2D geometry
-}
-Use \code{steps = 1} for 3D-only atlas. Use \code{steps = 6:7} to iterate on
-smoothing and reduction parameters.}
 }
 \value{
-A \code{ggseg_atlas} object containing region metadata, vertex indices,
-colours, and optionally sf geometry for 2D plots.
+A \code{ggseg_atlas} object.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
 Build an atlas from individual FreeSurfer \code{.label} files rather than a
 complete annotation. Each label file defines a single region by listing
-which surface vertices belong to it. Useful when you have analysis results
-saved as labels, or when you want to combine regions from different sources
-into a custom atlas.
+which surface vertices belong to it.
 
 The function detects hemisphere from filename prefixes (\code{lh.} or \code{rh.}) and
 derives region names from the rest of the filename.
 }
 \examples{
 \dontrun{
-# Create 3D-only atlas from label files
 labels <- c("lh.region1.label", "lh.region2.label", "rh.region1.label")
-atlas <- create_cortical_from_labels(labels, steps = 1)
-ggseg3d(atlas = atlas)
-
-# Full atlas with 2D geometry
 atlas <- create_cortical_from_labels(labels)
-
-# Iterate on smoothing parameters
-atlas <- create_cortical_from_labels(labels, steps = 6:8, smoothness = 10)
 }
 }

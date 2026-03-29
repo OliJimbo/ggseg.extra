@@ -38,7 +38,10 @@ read_volume <- function(file, reorient = TRUE) {
   vol <- switch(
     ext,
     "mgz" = freesurferformats::read.fs.mgh(file),
-    "nii" = RNifti::readNifti(file),
+    "nii" = {
+      rlang::check_installed("RNifti", reason = "to read NIfTI files")
+      RNifti::readNifti(file)
+    },
     cli::cli_abort(c(
       "Unsupported volume format: {.file {basename(file)}}",
       "i" = "Supported formats: .mgz, .nii, .nii.gz"

@@ -31,6 +31,10 @@ setup_sitrep <- function(detail = c("simple", "full")) {
 
 
 check_freesurfer <- function(detail = "simple") {
+  if (!rlang::is_installed("freesurfer")) {
+    cli::cli_alert_danger("freesurfer R package not installed")
+    return(FALSE)
+  }
   has_fs <- freesurfer::have_fs()
 
   if (detail == "full") {
@@ -86,10 +90,11 @@ check_other_system_deps <- function(detail = "simple") {
 check_fsaverage <- function(detail = "simple") {
   results <- list()
 
-  subj_dir <- tryCatch(
-    freesurfer::fs_subj_dir(),
-    error = function(e) ""
-  )
+  subj_dir <- if (rlang::is_installed("freesurfer")) {
+    tryCatch(freesurfer::fs_subj_dir(), error = function(e) "")
+  } else {
+    ""
+  }
 
   subj <- "fsaverage5"
   subj_path <- file.path(subj_dir, subj)

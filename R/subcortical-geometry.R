@@ -1,5 +1,41 @@
 # Subcortical geometry ----
 
+#' Ensure NIfTI volume uses a FreeSurfer-compatible datatype
+#'
+#' FreeSurfer's mri_pretess does not support all NIfTI datatypes
+#' (e.g. INT16/datatype 256). This converts incompatible volumes
+#' to INT32 via RNifti, writing a converted copy to output_dir.
+#'
+#' @param volume_file Path to NIfTI volume
+#' @param output_dir Directory for the converted file
+#' @return Path to a compatible NIfTI (original if already compatible)
+#' @noRd
+ensure_fs_compatible_nifti <- function(volume_file, output_dir) {
+  rlang::check_installed("RNifti", reason = "to read NIfTI headers")
+  hdr <- tryCatch(
+    RNifti::niftiHeader(volume_file),
+    error = function(e) NULL
+  )
+  if (is.null(hdr) || length(hdr$datatype) == 0) return(volume_file)
+  # FreeSurfer supports: 2 (UINT8), 4 (INT16 with slope), 8 (INT32),
+  # 16 (FLOAT32), 64 (FLOAT64). Datatype 256 (INT16 without slope) fails.
+  fs_ok <- c(2L, 4L, 8L, 16L, 64L)
+  if (hdr$datatype %in% fs_ok) return(volume_file)
+
+  converted <- file.path(
+    output_dir, paste0("_fs_compat_", basename(volume_file))
+  )
+  if (file.exists(converted)) return(converted)
+
+  dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+  vol <- RNifti::readNifti(volume_file)
+  vol_int <- array(as.integer(vol), dim = dim(vol))
+  out <- RNifti::asNifti(vol_int, reference = vol)
+  RNifti::writeNifti(out, converted)
+  converted
+}
+
+
 #' Tessellate a single label from a volume
 #'
 #' Creates a mesh from a single label in a segmentation volume using
@@ -32,6 +68,8 @@ tessellate_label <- function(
   if (skip_existing && file.exists(smooth_file)) {
     return(read_fs_surface(smooth_file, verbose = verbose))
   }
+
+  volume_file <- ensure_fs_compatible_nifti(volume_file, output_dir)
 
   if (!skip_existing || !file.exists(pretess_file)) {
     mri_pretess(

@@ -362,7 +362,6 @@ snapshot_na_regions <- function(
 
 # Batch snapshot engine ----
 
-#' @importFrom chromote ChromoteSession default_chromote_object
 #' @noRd
 snapshot_widget_batch <- function(
   widget,
@@ -375,6 +374,13 @@ snapshot_widget_batch <- function(
   render_delay = 0.3,
   max_retries = 2
 ) {
+  rlang::check_installed("chromote",
+    reason = "for browser-based screenshots"
+  )
+  rlang::check_installed("htmlwidgets",
+    reason = "for saving widget HTML"
+  )
+
   tmphtml <- tempfile(fileext = ".html")
   libdir <- paste0(tools::file_path_sans_ext(tmphtml), "_files")
   on.exit(unlink(c(tmphtml, libdir), recursive = TRUE), add = TRUE)
@@ -382,7 +388,7 @@ snapshot_widget_batch <- function(
   htmlwidgets::saveWidget(widget, tmphtml, selfcontained = FALSE)
 
   take_batch <- function() {
-    session <- ChromoteSession$new()
+    session <- chromote::ChromoteSession$new()
     on.exit(session$close(), add = TRUE)
 
     session$Emulation$setDeviceMetricsOverride(
@@ -421,7 +427,7 @@ snapshot_widget_batch <- function(
     result <- tryCatch(take_batch(), error = function(e) e)
     if (!inherits(result, "error")) break
     if (attempt <= max_retries) {
-      try(default_chromote_object()$close(), silent = TRUE)
+      try(chromote::default_chromote_object()$close(), silent = TRUE)
       Sys.sleep(2)
     } else {
       stop(result)

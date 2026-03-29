@@ -204,7 +204,7 @@ describe("read_neuromaps_annotation", {
 
 
 describe("create_cortical_from_neuromaps", {
-  it("creates ggseg_atlas with steps = 1", {
+  it("creates ggseg_atlas from neuromaps", {
     skip_if_not_installed("neuromapr")
     skip_if_not(
       exists("fetch_neuromaps_annotation", envir = asNamespace("neuromapr")),
@@ -245,7 +245,6 @@ describe("create_cortical_from_neuromaps", {
       source = "test",
       desc = "testdesc",
       atlas_name = "test_neuromaps",
-      steps = 1,
       verbose = FALSE,
       cleanup = FALSE
     )
@@ -291,7 +290,6 @@ describe("create_cortical_from_neuromaps", {
     result <- create_cortical_from_neuromaps(
       source = "abagen",
       desc = "genepc1",
-      steps = 1,
       verbose = FALSE,
       cleanup = FALSE
     )
@@ -327,7 +325,13 @@ describe("create_cortical_from_neuromaps", {
 
     local_mocked_bindings(
       read_neuromaps_volume = function(...) mock_annot,
-      check_fs = function(...) invisible(TRUE)
+      check_fs = function(...) invisible(TRUE),
+      cortical_project_and_build = function(...) {
+        structure(
+          list(core = data.frame(hemi = "left", region = "a")),
+          class = "ggseg_atlas"
+        )
+      }
     )
 
     result <- suppressWarnings(create_cortical_from_neuromaps(
@@ -335,7 +339,6 @@ describe("create_cortical_from_neuromaps", {
       desc = "vol",
       space = "MNI152",
       density = "2mm",
-      steps = 1,
       verbose = FALSE
     ))
 
@@ -380,7 +383,6 @@ describe("create_cortical_from_neuromaps", {
         desc = "test",
         space = "fsLR",
         density = "32k",
-        steps = 1,
         verbose = FALSE,
         cleanup = FALSE
       ),
@@ -388,7 +390,7 @@ describe("create_cortical_from_neuromaps", {
     )
   })
 
-  it("calls cortical_pipeline for steps > 1", {
+  it("calls cortical_project_and_build", {
     skip_if_not_installed("neuromapr")
     skip_if_not(
       exists("fetch_neuromaps_annotation", envir = asNamespace("neuromapr")),
@@ -417,7 +419,7 @@ describe("create_cortical_from_neuromaps", {
     local_mocked_bindings(
       check_fs = function(...) invisible(TRUE),
       check_magick = function() invisible(TRUE),
-      cortical_pipeline = function(...) {
+      cortical_project_and_build = function(...) {
         pipeline_called <<- TRUE
         structure(list(), class = "ggseg_atlas")
       }
@@ -429,7 +431,6 @@ describe("create_cortical_from_neuromaps", {
       source = "test",
       desc = "testdesc",
       atlas_name = "test_neuromaps",
-      steps = 1:8,
       verbose = FALSE
     )
     expect_true(pipeline_called)

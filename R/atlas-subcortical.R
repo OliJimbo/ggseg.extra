@@ -57,7 +57,6 @@
 #'   a colour palette, and optionally sf geometry for 2D slice plots.
 #' @export
 #' @importFrom dplyr tibble bind_rows left_join filter distinct
-#' @importFrom freesurfer have_fs fs_dir fs_subj_dir
 #' @importFrom furrr future_pmap furrr_options
 #' @importFrom progressr progressor
 #' @importFrom tools file_path_sans_ext

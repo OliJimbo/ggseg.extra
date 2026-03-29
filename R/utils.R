@@ -355,6 +355,25 @@ get_smoothness <- function(smoothness = NULL) {
   )
 }
 
+#' Get smooth refinements setting
+#'
+#' Returns the number of Chaikin corner-cutting refinements for the
+#' vertex projection pipeline. Higher values produce smoother region
+#' boundaries.
+#'
+#' @param smooth_refinements Optional explicit value. If NULL, reads from
+#'   options/env.
+#' @return Integer refinement count (0 = no smoothing)
+#' @noRd
+get_smooth_refinements <- function(smooth_refinements = NULL) {
+  as.integer(get_numeric_option(
+    smooth_refinements,
+    "ggseg.extra.smooth_refinements",
+    "GGSEG_EXTRA_SMOOTH_REFINEMENTS",
+    2
+  ))
+}
+
 #' Get snapshot dimension setting
 #'
 #' Returns the snapshot dimension (width and height in pixels) for brain
