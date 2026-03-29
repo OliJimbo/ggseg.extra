@@ -334,7 +334,7 @@ get_tolerance <- function(tolerance = NULL) {
     tolerance,
     "ggseg.extra.tolerance",
     "GGSEG_EXTRA_TOLERANCE",
-    0.5
+    1
   )
 }
 

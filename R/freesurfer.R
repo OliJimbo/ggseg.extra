@@ -6,6 +6,9 @@
 #' @return logical
 #' @keywords internal
 check_fs <- function(abort = FALSE) {
+  rlang::check_installed("freesurfer",
+    reason = "to interact with FreeSurfer"
+  )
   x <- freesurfer::have_fs()
 
   if (!x) {
@@ -37,7 +40,6 @@ check_fs <- function(abort = FALSE) {
 #'   giving much better coverage for volumetric parcellations.
 #' @template verbose
 #' @template opts
-#' @importFrom freesurfer get_fs
 #' @noRd
 mri_vol2surf <- function(
   input_file,
@@ -94,7 +96,6 @@ mri_vol2surf <- function(
 #' @template output_file
 #' @template verbose
 #' @template opts
-#' @importFrom freesurfer get_fs
 #' @noRd
 mri_pretess <- function(
   template,
@@ -128,7 +129,6 @@ mri_pretess <- function(
 #' @template output_file
 #' @param input_file input file
 #' @template opts
-#' @importFrom freesurfer get_fs
 #' @noRd
 mri_tessellate <- function(
   input_file,
@@ -158,7 +158,6 @@ mri_tessellate <- function(
 #' @template output_file
 #' @template verbose
 #' @template opts
-#' @importFrom freesurfer get_fs
 #' @noRd
 mri_smooth <- function(input_file, output_file, verbose, opts = NULL) {
   check_fs(abort = TRUE)
@@ -196,7 +195,6 @@ mri_smooth <- function(input_file, output_file, verbose, opts = NULL) {
 #'   (default fsaverage5)
 #' @template output_dir
 #' @template verbose
-#' @importFrom freesurfer get_fs
 #' @return nothing
 #' @export
 #' @examples
@@ -215,7 +213,7 @@ mri_surf2surf_rereg <- function(
   annot,
   hemi = c("lh", "rh"),
   target_subject = "fsaverage5",
-  output_dir = file.path(fs_subj_dir(), subject, "label"),
+  output_dir = file.path(freesurfer::fs_subj_dir(), subject, "label"),
   verbose = get_verbose() # nolint: object_usage_linter
 ) {
   check_fs(abort = TRUE)
@@ -246,7 +244,6 @@ mri_surf2surf_rereg <- function(
 #' @param input_file path to input surface file to convert
 #' @template output_file
 #' @template verbose
-#' @importFrom freesurfer get_fs
 #' @return ascii data
 #' @noRd
 surf2asc <- function(input_file, output_file, verbose = get_verbose()) {

@@ -44,15 +44,16 @@ annot_files <- c(
 # =============================================================================
 # STEP 2: Create the atlas
 # =============================================================================
-# steps = 1  -> 3D only (fast, no screenshots needed)
-# steps = NULL -> full pipeline including 2D geometry (needs FreeSurfer + ImageMagick)
+# The cortical pipeline reads annotations and projects mesh to 2D polygons
+# in seconds — no external rendering dependencies needed.
+# Adjust tolerance for polygon simplification (0 = max fidelity, higher = smaller).
 
 # METHOD A: From annotation
 {GGSEG} <- create_cortical_from_annotation(
   input_annot = annot_files,
   atlas_name = "{GGSEG}",
   output_dir = here::here("data-raw"),
-  steps = NULL,
+  tolerance = 0.5,
   skip_existing = TRUE,
   cleanup = FALSE,
   verbose = TRUE
@@ -63,7 +64,7 @@ annot_files <- c(
 #   label_files = label_files,
 #   atlas_name = "{GGSEG}",
 #   output_dir = here::here("data-raw"),
-#   steps = NULL,
+#   tolerance = 0.5,
 #   skip_existing = TRUE,
 #   cleanup = FALSE,
 #   verbose = TRUE

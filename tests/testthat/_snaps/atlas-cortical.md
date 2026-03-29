@@ -1,23 +1,13 @@
-# cortical_pipeline verbose and cleanup paths / logs verbose messages for each step
+# cortical_project_and_build verbose and cleanup paths / logs verbose messages for each step
 
     Code
-      cortical_pipeline(atlas_3d = structure(list(), class = "ggseg_atlas"),
-      components = mock_components(), atlas_name = "test", hemisphere = "lh", views = "lateral",
-      region_snapshot_fn = function(...) NULL, config = list(steps = 2:8,
-      skip_existing = FALSE, tolerance = 1, smoothness = 5, cleanup = FALSE, verbose = TRUE),
-      dirs = mock_dirs(), start_time = Sys.time())
+      cortical_project_and_build(components = mock_components(), atlas_name = "test",
+      hemisphere = "lh", views = "lateral", config = list(steps = 1:2, skip_existing = FALSE,
+      tolerance = 1, cleanup = FALSE, verbose = TRUE), dirs = mock_dirs(),
+      start_time = Sys.time())
     Message
-      i 2/8 Taking full brain snapshots
-      v 2/8 Taking full brain snapshots [<TIME>]
-      
-      i 3/8 Taking region snapshots
-      v 3/8 Taking region snapshots [<TIME>]
-      
-      i 4/8 Isolating regions
-      v 4/8 Isolating regions [<TIME>]
-      
-      i 8/8 Building final atlas
-      v 8/8 Building final atlas [<TIME>]
+      i Projecting mesh to 2D polygons
+      v Projecting mesh to 2D polygons [<TIME>]
       
       v Brain atlas created with 1 regions
       
@@ -39,25 +29,43 @@
 # create_cortical_from_annotation verbose output / prints atlas name and paths when verbose is TRUE
 
     Code
-      create_cortical_from_annotation(input_annot = c("lh.test.annot"), steps = 1,
-      verbose = TRUE)
+      create_cortical_from_annotation(input_annot = c("lh.test.annot"), verbose = TRUE)
     Message
       
       -- Creating brain atlas "test" -------------------------------------------------
       i Input files: 'lh.test.annot'
-      i Setting output directory to '<TMPDIR>'
-      i 1/8 Reading annotation files
-      v 1/8 Reading annotation files [<TIME>]
+      i Reading annotation files
+      v Reading annotation files [<TIME>]
+      
+      i Projecting mesh to 2D polygons
+      i Projecting "rh" "lateral"
+      i Projecting mesh to 2D polygons
+      i Projecting "rh" "medial"
+      i Projecting mesh to 2D polygons
+      i Projecting "rh" "superior"
+      i Projecting mesh to 2D polygons
+      i Projecting "rh" "inferior"
+      i Projecting mesh to 2D polygons
+      i Projecting "lh" "lateral"
+      i Projecting mesh to 2D polygons
+      i Projecting "lh" "medial"
+      i Projecting mesh to 2D polygons
+      i Projecting "lh" "superior"
+      i Projecting mesh to 2D polygons
+      i Projecting "lh" "inferior"
+      i Projecting mesh to 2D polygons
+      v Projecting mesh to 2D polygons [<TIME>]
       
       v Temporary files removed
-      v 3D atlas created with 1 regions
+      v Brain atlas created with 1 regions
       
       -- test ggseg atlas ------------------------------------------------------------
       Type: cortical
       Regions: 1
       Hemispheres: left
+      Views: inferior, lateral, medial, superior
       Palette: v
-      Rendering: x ggseg
+      Rendering: v ggseg
       v ggseg3d (vertices)
       --------------------------------------------------------------------------------
     Output
@@ -69,29 +77,39 @@
 # create_cortical_from_labels verbose and LUT paths / prints verbose output when verbose is TRUE
 
     Code
-      create_cortical_from_labels(labels, atlas_name = "test_atlas", steps = 1,
-        verbose = TRUE)
+      create_cortical_from_labels(labels, atlas_name = "test_atlas", verbose = TRUE)
     Message
       
       -- Creating brain atlas "test_atlas" -------------------------------------------
       i Input files: 'testdata/cortical/lh.region1.label', 'testdata/cortical/lh.region2.label', and 'testdata/cortical/rh.region1.label'
-      i Setting output directory to '<TMPDIR>'
-      i 1/8 Reading 3 label files
+      i Reading 3 label files
     Condition
       Warning in `serializedSize()`:
       'package:grDevices' may not be available when loading
     Message
-      v 1/8 Reading 3 label files [<TIME>]
+      v Reading 3 label files [<TIME>]
+      
+      i Projecting mesh to 2D polygons
+      i Projecting "lh" "lateral"
+      i Projecting mesh to 2D polygons
+      i Projecting "lh" "medial"
+      i Projecting mesh to 2D polygons
+      i Projecting "rh" "lateral"
+      i Projecting mesh to 2D polygons
+      i Projecting "rh" "medial"
+      i Projecting mesh to 2D polygons
+      v Projecting mesh to 2D polygons [<TIME>]
       
       v Temporary files removed
-      v 3D atlas created with 3 regions
+      v Brain atlas created with 3 regions
       
       -- test_atlas ggseg atlas ------------------------------------------------------
       Type: cortical
       Regions: 2
       Hemispheres: left, right
+      Views: lateral, medial
       Palette: x
-      Rendering: x ggseg
+      Rendering: v ggseg
       v ggseg3d (vertices)
       --------------------------------------------------------------------------------
     Output

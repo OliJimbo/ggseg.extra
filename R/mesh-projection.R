@@ -99,69 +99,65 @@ build_vertex_label_vector <- function(vertices_df, n_vertices, hemi_short) {
   vertex_labels
 }
 
-#' Assign a face label based on its three vertex labels
+#' Split a boundary triangle into per-region polygon fragments
 #'
-#' Uniform faces (all 3 vertices same label) get that label directly.
-#' Boundary faces are assigned to the **smallest** neighboring region
-#' so that small regions gain area and become more visible in plots.
+#' For triangles where vertices belong to different regions, interpolate
+#' midpoints on edges that cross boundaries and return sub-polygons for
+#' each region. This eliminates sawtooth artifacts at region borders.
 #'
-#' @param vertex_labels Character vector from `build_vertex_label_vector()`.
-#' @param faces F x 3 matrix of 1-indexed vertex indices.
-#' @return Character vector of length F (NA only if all vertices are NA).
+#' @param p1,p2,p3 Numeric length-2 vertex coordinates.
+#' @param lab1,lab2,lab3 Character labels (must all be non-NA).
+#' @return List of `list(label, coords)` where coords is a closed ring matrix.
 #' @noRd
-assign_face_labels <- function(vertex_labels, faces) {
-  l1 <- vertex_labels[faces[, 1]]
-  l2 <- vertex_labels[faces[, 2]]
-  l3 <- vertex_labels[faces[, 3]]
+split_boundary_triangle <- function(p1, p2, p3, lab1, lab2, lab3) {
+  labs <- c(lab1, lab2, lab3)
+  unique_labs <- unique(labs)
 
-  result <- rep(NA_character_, nrow(faces))
-
-  all_same <- !is.na(l1) & !is.na(l2) & !is.na(l3) & l1 == l2 & l2 == l3
-  result[all_same] <- l1[all_same]
-
-  region_sizes <- table(vertex_labels[!is.na(vertex_labels)])
-
-  boundary <- !all_same
-  idx <- which(boundary)
-  for (i in idx) {
-    labs <- c(l1[i], l2[i], l3[i])
-    labs <- unique(labs[!is.na(labs)])
-    if (length(labs) == 0) next
-    if (length(labs) == 1) {
-      result[i] <- labs
-      next
-    }
-    sizes <- region_sizes[labs]
-    result[i] <- names(which.min(sizes))
+  if (length(unique_labs) == 1) {
+    return(list(list(label = lab1, coords = rbind(p1, p2, p3, p1))))
   }
 
-  result
-}
+  mid <- function(a, b) (a + b) / 2
 
-#' Build sf polygon for one region from projected triangles
-#'
-#' @param verts_2d N x 2 projected vertex coordinates.
-#' @param faces F x 3 matrix of 1-indexed vertex indices.
-#' @param face_mask Logical vector selecting which faces to include.
-#' @return An `sfc_POLYGON`/`sfc_MULTIPOLYGON`, or NULL if no faces.
-#' @noRd
-#' @importFrom sf st_polygon st_sfc st_union st_make_valid
-build_region_polygon <- function(verts_2d, faces, face_mask) {
-  sel <- faces[face_mask, , drop = FALSE]
-  if (nrow(sel) == 0) return(NULL)
+  if (length(unique_labs) == 2) {
+    pts <- rbind(p1, p2, p3)
+    counts <- table(labs)
+    odd_lab <- names(counts[counts == 1])
+    maj_lab <- names(counts[counts == 2])
+    odd_i <- which(labs == odd_lab)
+    maj_i <- which(labs == maj_lab)
 
-  triangles <- vector("list", nrow(sel))
-  for (i in seq_len(nrow(sel))) {
-    coords <- verts_2d[sel[i, ], , drop = FALSE]
-    coords <- rbind(coords, coords[1, , drop = FALSE])
-    triangles[[i]] <- sf::st_polygon(list(coords))
+    po <- pts[odd_i, ]
+    pm1 <- pts[maj_i[1], ]
+    pm2 <- pts[maj_i[2], ]
+
+    m1 <- mid(po, pm1)
+    m2 <- mid(po, pm2)
+
+    list(
+      list(label = odd_lab, coords = rbind(po, m1, m2, po)),
+      list(label = maj_lab, coords = rbind(pm1, pm2, m2, m1, pm1))
+    )
+  } else {
+    ctr <- (p1 + p2 + p3) / 3
+    m12 <- mid(p1, p2)
+    m23 <- mid(p2, p3)
+    m13 <- mid(p1, p3)
+
+    list(
+      list(label = lab1, coords = rbind(p1, m12, ctr, m13, p1)),
+      list(label = lab2, coords = rbind(p2, m23, ctr, m12, p2)),
+      list(label = lab3, coords = rbind(p3, m13, ctr, m23, p3))
+    )
   }
-
-  geom <- sf::st_make_valid(sf::st_union(sf::st_sfc(triangles)))
-  geom
 }
+
 
 #' Project one hemisphere + one view to sf polygons
+#'
+#' Boundary triangles (vertices with different region labels) are split into
+#' sub-polygons along interpolated edge midpoints so that region borders are
+#' smooth instead of jagged.
 #'
 #' @param mesh Brain mesh list with `vertices` and `faces` data frames.
 #' @param vertex_labels Character vector from `build_vertex_label_vector()`.
@@ -171,7 +167,7 @@ build_region_polygon <- function(verts_2d, faces, face_mask) {
 #' @return sf data.frame with columns: filenm, hemi_short, hemi, view,
 #'   label, geometry.
 #' @noRd
-#' @importFrom sf st_sf st_sfc
+#' @importFrom sf st_sf st_sfc st_polygon st_union st_make_valid
 project_mesh_view <- function(mesh, vertex_labels, camera_pos,
                               hemi_short, view) {
   verts_3d <- as.matrix(mesh$vertices)
@@ -181,31 +177,78 @@ project_mesh_view <- function(mesh, vertex_labels, camera_pos,
   verts_2d <- project_vertices_2d(verts_3d, basis)
 
   visible <- cull_backfaces(verts_3d, faces_1idx, camera_pos)
-  face_labels <- assign_face_labels(vertex_labels, faces_1idx)
 
-  region_labels <- unique(face_labels[!is.na(face_labels) & visible])
+  l1 <- vertex_labels[faces_1idx[, 1]]
+  l2 <- vertex_labels[faces_1idx[, 2]]
+  l3 <- vertex_labels[faces_1idx[, 3]]
+
+  all_labeled <- !is.na(l1) & !is.na(l2) & !is.na(l3)
+
+  region_sizes <- table(vertex_labels[!is.na(vertex_labels)])
+
+  vis_idx <- which(visible)
+  max_polys <- length(vis_idx) * 3L
+  all_polys <- vector("list", max_polys)
+  all_labels <- character(max_polys)
+  n <- 0L
+
+  for (i in vis_idx) {
+    labs <- c(l1[i], l2[i], l3[i])
+    non_na <- labs[!is.na(labs)]
+    unique_non_na <- unique(non_na)
+    if (length(unique_non_na) == 0) next
+
+    vi <- faces_1idx[i, ]
+
+    if (length(unique_non_na) == 1 || !all_labeled[i]) {
+      if (length(unique_non_na) == 1) {
+        lbl <- unique_non_na
+      } else {
+        sizes <- region_sizes[unique_non_na]
+        lbl <- names(which.min(sizes))
+      }
+      coords <- verts_2d[vi, , drop = FALSE]
+      coords <- rbind(coords, coords[1, , drop = FALSE])
+      n <- n + 1L
+      all_polys[[n]] <- sf::st_polygon(list(coords))
+      all_labels[n] <- lbl
+      next
+    }
+
+    fragments <- split_boundary_triangle(
+      verts_2d[vi[1], ], verts_2d[vi[2], ], verts_2d[vi[3], ],
+      labs[1], labs[2], labs[3]
+    )
+    for (frag in fragments) {
+      n <- n + 1L
+      all_polys[[n]] <- sf::st_polygon(list(frag$coords))
+      all_labels[n] <- frag$label
+    }
+  }
+
+  if (n == 0L) return(NULL)
+
+  all_polys <- all_polys[seq_len(n)]
+  all_labels <- all_labels[seq_len(n)]
+  sfc_all <- sf::st_sfc(all_polys)
+
   hemi_long <- if (hemi_short == "lh") "left" else "right"
+  region_labels <- unique(all_labels)
 
   results <- vector("list", length(region_labels))
   for (j in seq_along(region_labels)) {
     lbl <- region_labels[j]
-    mask <- visible & !is.na(face_labels) & face_labels == lbl
-    poly <- build_region_polygon(verts_2d, faces_1idx, mask)
-    if (!is.null(poly)) {
-      results[[j]] <- data.frame(
-        filenm = paste0(hemi_short, "_", view, "_", lbl),
-        hemi_short = hemi_short,
-        hemi = hemi_long,
-        view = view,
-        label = lbl,
-        stringsAsFactors = FALSE
-      )
-      results[[j]]$geometry <- poly
-    }
+    geom <- sf::st_make_valid(sf::st_union(sfc_all[all_labels == lbl]))
+    results[[j]] <- data.frame(
+      filenm = paste0(hemi_short, "_", view, "_", lbl),
+      hemi_short = hemi_short,
+      hemi = hemi_long,
+      view = view,
+      label = lbl,
+      stringsAsFactors = FALSE
+    )
+    results[[j]]$geometry <- geom
   }
-
-  results <- results[!vapply(results, is.null, logical(1))]
-  if (length(results) == 0) return(NULL)
 
   combined <- do.call(rbind, results)
   sf::st_as_sf(combined)

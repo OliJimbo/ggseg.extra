@@ -1,36 +1,15 @@
 describe("create_cortical_from_annotation", {
-  it("checks for FreeSurfer when geometry is requested", {
-    local_mocked_bindings(
-      check_fs = function(abort = FALSE) {
-        if (abort) {
-          cli::cli_abort("FreeSurfer not found")
-        }
-        FALSE
-      }
-    )
-
-    expect_error(
-      create_cortical_from_annotation(
-        input_annot = c("lh.test.annot", "rh.test.annot"),
-        steps = NULL,
-        verbose = FALSE
-      ),
-      "FreeSurfer"
-    )
-  })
-
   it("validates annotation files exist", {
     expect_error(
       create_cortical_from_annotation(
         input_annot = c("nonexistent.annot"),
-        steps = 1,
         verbose = FALSE
       ),
       "not found"
     )
   })
 
-  it("creates 3D-only atlas from annotation", {
+  it("creates atlas from annotation", {
     skip_if_not_installed("freesurferformats")
 
     annots <- test_annot_files()
@@ -38,7 +17,6 @@ describe("create_cortical_from_annotation", {
 
     atlas <- create_cortical_from_annotation(
       input_annot = annot_files,
-      steps = 1,
       verbose = FALSE
     )
 
@@ -55,7 +33,6 @@ describe("create_cortical_from_annotation", {
 
     atlas <- create_cortical_from_annotation(
       input_annot = annot_files,
-      steps = 1,
       verbose = FALSE
     )
 
@@ -72,7 +49,6 @@ describe("create_cortical_from_annotation", {
 
     atlas <- create_cortical_from_annotation(
       input_annot = annot_files,
-      steps = 1,
       verbose = FALSE
     )
 
@@ -83,14 +59,9 @@ describe("create_cortical_from_annotation", {
 })
 
 
-describe("cortical_pipeline", {
-  it("dispatches region_snapshot_fn with correct args for step 3", {
-    captured_snapshot_args <- NULL
+describe("cortical_project_and_build", {
+  it("runs projection and returns atlas", {
     do.call(local_mocked_bindings, mock_cortical_pipeline_bindings())
-
-    custom_fn <- function(...) {
-      captured_snapshot_args <<- list(...)
-    }
 
     components <- mock_components("lh_frontal", "left", "frontal", "#FF0000")
     components$vertices_df <- data.frame(
@@ -98,18 +69,15 @@ describe("cortical_pipeline", {
       vertices = I(list(1:10))
     )
 
-    cortical_pipeline(
-      atlas_3d = structure(list(), class = "ggseg_atlas"),
+    result <- cortical_project_and_build(
       components = components,
       atlas_name = "test",
       hemisphere = c("lh", "rh"),
       views = c("lateral"),
-      region_snapshot_fn = custom_fn,
       config = list(
-        steps = 2:8,
+        steps = 1:2,
         skip_existing = FALSE,
         tolerance = 1,
-        smoothness = 5,
         cleanup = FALSE,
         verbose = FALSE
       ),
@@ -117,57 +85,13 @@ describe("cortical_pipeline", {
       start_time = Sys.time()
     )
 
-    expect_false(is.null(captured_snapshot_args))
-  })
-
-  it("skips snapshot steps when not in steps vector", {
-    step2_called <- FALSE
-    step4_called <- FALSE
-    local_mocked_bindings(
-      cortical_brain_snapshots = function(...) {
-        step2_called <<- TRUE
-      },
-      cortical_isolate_regions = function(...) {
-        step4_called <<- TRUE
-      },
-      extract_contours = function(...) NULL,
-      smooth_contours = function(...) NULL,
-      reduce_vertex = function(...) NULL,
-      cortical_build_sf = function(...) mock_sf_polygon(),
-      ggseg_atlas = function(...) structure(list(...), class = "ggseg_atlas"),
-      ggseg_data_cortical = function(...) list(...),
-      warn_if_large_atlas = function(...) NULL,
-      preview_atlas = function(...) NULL
-    )
-
-    result <- cortical_pipeline(
-      atlas_3d = structure(list(), class = "ggseg_atlas"),
-      components = mock_components(),
-      atlas_name = "test",
-      hemisphere = "lh",
-      views = "lateral",
-      region_snapshot_fn = function(...) NULL,
-      config = list(
-        steps = 5:8,
-        skip_existing = FALSE,
-        tolerance = 1,
-        smoothness = 5,
-        cleanup = FALSE,
-        verbose = FALSE
-      ),
-      dirs = mock_dirs(),
-      start_time = Sys.time()
-    )
-
-    expect_false(step2_called)
-    expect_false(step4_called)
     expect_s3_class(result, "ggseg_atlas")
   })
 })
 
 
 describe("create_cortical_from_annotation pipeline flow", {
-  it("step 1 passes input_annot to read_annotation_data", {
+  it("passes input_annot to read_annotation_data", {
     captured <- list()
     local_mocked_bindings(
       read_annotation_data = function(annot_files) {
@@ -205,59 +129,11 @@ describe("create_cortical_from_annotation pipeline flow", {
 
     result <- create_cortical_from_annotation(
       input_annot = c("lh.test.annot"),
-      steps = 1,
       verbose = FALSE
     )
 
     expect_equal(captured$annot, c("lh.test.annot"))
     expect_s3_class(result, "ggseg_atlas")
-  })
-
-  it("returns early for steps = 1 without calling step 2", {
-    step2_called <- FALSE
-    local_mocked_bindings(
-      read_annotation_data = function(annot_files) {
-        dplyr::tibble(
-          hemi = "left",
-          region = "frontal",
-          label = "lh_frontal",
-          colour = "#FF0000",
-          vertices = list(1:10)
-        )
-      },
-      build_atlas_components = function(data) {
-        list(
-          core = data.frame(
-            hemi = "left",
-            region = "frontal",
-            label = "lh_frontal",
-            stringsAsFactors = FALSE
-          ),
-          palette = c(lh_frontal = "#FF0000"),
-          vertices_df = data.frame(
-            label = "lh_frontal",
-            vertices = I(list(1:10))
-          )
-        )
-      },
-      ggseg_atlas = function(...) {
-        structure(list(...), class = "ggseg_atlas")
-      },
-      ggseg_data_cortical = function(...) list(...),
-      cortical_brain_snapshots = function(...) {
-        step2_called <<- TRUE
-      }
-    )
-
-    withr::local_options(ggseg.extra.output_dir = withr::local_tempdir())
-
-    create_cortical_from_annotation(
-      input_annot = c("lh.test.annot"),
-      steps = 1,
-      verbose = FALSE
-    )
-
-    expect_false(step2_called)
   })
 })
 
@@ -344,7 +220,6 @@ describe("create_cortical_from_labels", {
     atlas <- create_cortical_from_labels(
       labels,
       atlas_name = "test_atlas",
-      steps = 1,
       verbose = FALSE
     )
 
@@ -360,7 +235,6 @@ describe("create_cortical_from_labels", {
     labels <- unlist(test_label_files())
     atlas <- create_cortical_from_labels(
       labels,
-      steps = 1,
       verbose = FALSE
     )
 
@@ -376,7 +250,6 @@ describe("create_cortical_from_labels", {
     labels <- unlist(test_label_files())
     atlas <- create_cortical_from_labels(
       labels,
-      steps = 1,
       verbose = FALSE
     )
 
@@ -397,7 +270,6 @@ describe("create_cortical_from_labels", {
     atlas <- create_cortical_from_labels(
       labels,
       input_lut = custom_lut,
-      steps = 1,
       verbose = FALSE
     )
 
@@ -419,22 +291,17 @@ describe("create_cortical_from_labels", {
     )
   })
 
-  it("requires FreeSurfer to be available", {
-    local_mocked_bindings(
-      check_fs = function(abort = FALSE) {
-        if (abort) {
-          cli::cli_abort("FreeSurfer not found")
-        }
-        FALSE
-      }
-    )
+  it("does not require FreeSurfer for label files", {
+    skip_if_not_installed("freesurferformats")
 
-    expect_error(
-      create_cortical_from_labels(
-        c("lh.test.label"),
-        verbose = FALSE
-      ),
-      "FreeSurfer"
+    labels <- unlist(test_label_files())
+    expect_no_error(
+      suppressWarnings(
+        create_cortical_from_labels(
+          labels,
+          verbose = FALSE
+        )
+      )
     )
   })
 })
@@ -467,7 +334,7 @@ describe("read_label_vertices", {
 })
 
 
-describe("cortical_resolve_step1", {
+describe("cortical_read_data", {
   it("loads cached data when files exist and skip_existing is TRUE", {
     tmp_dir <- withr::local_tempdir()
     mock_atlas <- structure(list(atlas = "test"), class = "ggseg_atlas")
@@ -479,8 +346,8 @@ describe("cortical_resolve_step1", {
     saveRDS(mock_atlas, file.path(tmp_dir, "atlas_3d.rds"))
     saveRDS(mock_components, file.path(tmp_dir, "components.rds"))
 
-    result <- cortical_resolve_step1(
-      config = list(steps = 1L, skip_existing = TRUE, verbose = FALSE),
+    result <- cortical_read_data(
+      config = list(steps = 1:2, skip_existing = TRUE, verbose = FALSE),
       dirs = list(base = tmp_dir),
       atlas_name = "test",
       read_fn = function() stop("should not be called"),
@@ -511,7 +378,7 @@ describe("cortical_finalize", {
       result <- cortical_finalize(
         mock_atlas,
         config = list(
-          steps = 1L, cleanup = FALSE, verbose = TRUE
+          steps = 1:2, cleanup = FALSE, verbose = TRUE
         ),
         dirs = dirs,
         start_time = Sys.time()
@@ -538,7 +405,7 @@ describe("cortical_finalize", {
     cortical_finalize(
       mock_atlas,
       config = list(
-        steps = 1L:8L, cleanup = TRUE, verbose = FALSE
+        steps = 1:2, cleanup = TRUE, verbose = FALSE
       ),
       dirs = list(base = file.path(base_dir, "subdir")),
       start_time = Sys.time()
@@ -549,28 +416,25 @@ describe("cortical_finalize", {
 })
 
 
-describe("cortical_pipeline verbose and cleanup paths", {
+describe("cortical_project_and_build verbose and cleanup paths", {
   it("logs verbose messages for each step", {
     do.call(local_mocked_bindings, mock_cortical_pipeline_bindings())
 
     scrub <- function(x) {
-      x <- gsub("\\[\\d+ms\\]", "[<TIME>]", x)
+      x <- gsub("\\[\\d+\\.?\\d*[ms]s?\\]", "[<TIME>]", x)
       x <- gsub("/tmp/Rtmp[^ ']*|/var/folders[^ ']*", "<TMPDIR>", x)
       gsub("[A-Za-z]:[^ ']*Rtmp[^ ']*", "<TMPDIR>", x)
     }
     expect_snapshot(
-      cortical_pipeline(
-        atlas_3d = structure(list(), class = "ggseg_atlas"),
+      cortical_project_and_build(
         components = mock_components(),
         atlas_name = "test",
         hemisphere = "lh",
         views = "lateral",
-        region_snapshot_fn = function(...) NULL,
         config = list(
-          steps = 2:8,
+          steps = 1:2,
           skip_existing = FALSE,
           tolerance = 1,
-          smoothness = 5,
           cleanup = FALSE,
           verbose = TRUE
         ),
@@ -589,18 +453,15 @@ describe("cortical_pipeline verbose and cleanup paths", {
     dir.create(actual_base)
 
     expect_message(
-      cortical_pipeline(
-        atlas_3d = structure(list(), class = "ggseg_atlas"),
+      cortical_project_and_build(
         components = mock_components(),
         atlas_name = "test",
         hemisphere = "lh",
         views = "lateral",
-        region_snapshot_fn = function(...) NULL,
         config = list(
-          steps = 8L,
+          steps = 1:2,
           skip_existing = FALSE,
           tolerance = 1,
-          smoothness = 5,
           cleanup = TRUE,
           verbose = TRUE
         ),
@@ -617,61 +478,36 @@ describe("cortical_pipeline verbose and cleanup paths", {
 
     expect_false(dir.exists(actual_base))
   })
-
-  it("returns atlas_3d and logs completion when step 8 not in steps", {
-    local_mocked_bindings(
-      extract_contours = function(...) NULL,
-      smooth_contours = function(...) NULL,
-      reduce_vertex = function(...) NULL,
-      preview_atlas = function(...) NULL,
-      log_elapsed = function(...) NULL
-    )
-
-    mock_atlas <- structure(list(atlas = "test_3d"), class = "ggseg_atlas")
-
-    result <- NULL
-    expect_message(
-      result <- cortical_pipeline(
-        atlas_3d = mock_atlas,
-        components = mock_components(),
-        atlas_name = "test",
-        hemisphere = "lh",
-        views = "lateral",
-        region_snapshot_fn = function(...) NULL,
-        config = list(
-          steps = 5:7,
-          skip_existing = FALSE,
-          tolerance = 1,
-          smoothness = 5,
-          cleanup = FALSE,
-          verbose = TRUE
-        ),
-        dirs = mock_dirs(),
-        start_time = Sys.time()
-      ),
-      "Completed steps"
-    )
-
-    expect_s3_class(result, "ggseg_atlas")
-  })
 })
 
 
-describe("create_cortical_from_annotation magick check", {
-  it("checks for ImageMagick when steps > 1", {
+describe("cortical pipeline does not require ImageMagick", {
+  it("check_magick is not called during cortical creation", {
+    magick_called <- FALSE
     local_mocked_bindings(
-      check_fs = function(abort = FALSE) invisible(TRUE),
-      check_magick = function() cli::cli_abort("ImageMagick not found")
+      check_magick = function() {
+        magick_called <<- TRUE
+        cli::cli_abort("ImageMagick not found")
+      },
+      cortical_read_data = function(...) {
+        list(
+          atlas_3d = structure(
+            list(core = data.frame(hemi = "left", region = "a")),
+            class = "ggseg_atlas"
+          ),
+          components = mock_components()
+        )
+      }
     )
+    do.call(local_mocked_bindings, mock_cortical_pipeline_bindings())
 
-    expect_error(
+    expect_no_error(
       create_cortical_from_annotation(
         input_annot = c("lh.test.annot"),
-        steps = 2:8,
         verbose = FALSE
-      ),
-      "ImageMagick"
+      )
     )
+    expect_false(magick_called)
   })
 })
 
@@ -711,14 +547,13 @@ describe("create_cortical_from_annotation verbose output", {
     withr::local_options(ggseg.extra.output_dir = withr::local_tempdir())
 
     scrub <- function(x) {
-      x <- gsub("\\[\\d+ms\\]", "[<TIME>]", x)
+      x <- gsub("\\[\\d+\\.?\\d*[ms]s?\\]", "[<TIME>]", x)
       x <- gsub("/tmp/Rtmp[^ ']*|/var/folders[^ ']*", "<TMPDIR>", x)
       gsub("[A-Za-z]:[^ ']*Rtmp[^ ']*", "<TMPDIR>", x)
     }
     expect_snapshot(
       create_cortical_from_annotation(
         input_annot = c("lh.test.annot"),
-        steps = 1,
         verbose = TRUE
       ),
       transform = scrub
@@ -728,7 +563,7 @@ describe("create_cortical_from_annotation verbose output", {
 
 
 describe("create_cortical_from_annotation full pipeline path", {
-  it("passes correct components and config to cortical_pipeline", {
+  it("passes correct components and config to cortical_project_and_build", {
     captured_pipeline_args <- NULL
     local_mocked_bindings(
       check_fs = function(abort = FALSE) invisible(TRUE),
@@ -759,7 +594,7 @@ describe("create_cortical_from_annotation full pipeline path", {
       },
       ggseg_atlas = function(...) structure(list(...), class = "ggseg_atlas"),
       ggseg_data_cortical = function(...) list(...),
-      cortical_pipeline = function(...) {
+      cortical_project_and_build = function(...) {
         captured_pipeline_args <<- list(...)
         structure(list(), class = "ggseg_atlas")
       }
@@ -769,7 +604,6 @@ describe("create_cortical_from_annotation full pipeline path", {
 
     result <- create_cortical_from_annotation(
       input_annot = c("lh.test.annot"),
-      steps = 1:8,
       verbose = FALSE
     )
 
@@ -779,12 +613,11 @@ describe("create_cortical_from_annotation full pipeline path", {
       captured_pipeline_args$components$palette,
       c(lh_frontal = "#FF0000")
     )
-    expect_s3_class(captured_pipeline_args$atlas_3d, "ggseg_atlas")
   })
 })
 
 
-describe("cortical_resolve_step1 verbose paths", {
+describe("cortical_read_data verbose paths", {
   it("prints progress step when verbose is TRUE and step runs", {
     local_mocked_bindings(
       ggseg_atlas = function(...) structure(list(...), class = "ggseg_atlas"),
@@ -803,15 +636,15 @@ describe("cortical_resolve_step1 verbose paths", {
     }
 
     expect_message(
-      cortical_resolve_step1(
-        config = list(steps = 1L, skip_existing = FALSE, verbose = TRUE),
+      cortical_read_data(
+        config = list(steps = 1:2, skip_existing = FALSE, verbose = TRUE),
         dirs = list(base = tmp_dir),
         atlas_name = "test",
         read_fn = read_fn,
-        step_label = "1/8 Reading annotation files",
-        cache_label = "Step 1 (Read annotations)"
+        step_label = "Reading annotation files",
+        cache_label = "Read annotations"
       ),
-      "1/8 Reading"
+      "Reading"
     )
   })
 
@@ -828,12 +661,12 @@ describe("cortical_resolve_step1 verbose paths", {
     }
 
     expect_error(
-      cortical_resolve_step1(
-        config = list(steps = 1L, skip_existing = FALSE, verbose = FALSE),
+      cortical_read_data(
+        config = list(steps = 1:2, skip_existing = FALSE, verbose = FALSE),
         dirs = list(base = tmp_dir),
         atlas_name = "test",
         read_fn = read_fn,
-        step_label = "1/8 test",
+        step_label = "test",
         cache_label = "test"
       ),
       "No regions found"
@@ -852,15 +685,15 @@ describe("cortical_resolve_step1 verbose paths", {
     saveRDS(mock_components, file.path(tmp_dir, "components.rds"))
 
     expect_message(
-      cortical_resolve_step1(
-        config = list(steps = 1L, skip_existing = TRUE, verbose = TRUE),
+      cortical_read_data(
+        config = list(steps = 1:2, skip_existing = TRUE, verbose = TRUE),
         dirs = list(base = tmp_dir),
         atlas_name = "test",
         read_fn = function() stop("should not be called"),
         step_label = "test",
         cache_label = "test"
       ),
-      "Loaded existing atlas data"
+      "Loaded cached atlas data"
     )
   })
 })
@@ -879,7 +712,7 @@ describe("create_cortical_from_labels verbose and LUT paths", {
     labels <- unlist(test_label_files())
 
     scrub <- function(x) {
-      x <- gsub("\\[\\d+ms\\]", "[<TIME>]", x)
+      x <- gsub("\\[\\d+\\.?\\d*[ms]s?\\]", "[<TIME>]", x)
       x <- gsub("/tmp/Rtmp[^ ']*|/var/folders[^ ']*", "<TMPDIR>", x)
       gsub("[A-Za-z]:[^ ']*Rtmp[^ ']*", "<TMPDIR>", x)
     }
@@ -887,7 +720,6 @@ describe("create_cortical_from_labels verbose and LUT paths", {
       create_cortical_from_labels(
         labels,
         atlas_name = "test_atlas",
-        steps = 1,
         verbose = TRUE
       ),
       transform = scrub
@@ -925,7 +757,6 @@ describe("create_cortical_from_labels verbose and LUT paths", {
       labels,
       input_lut = rgb_lut,
       atlas_name = "test_atlas",
-      steps = 1,
       verbose = FALSE
     )
 
@@ -962,21 +793,20 @@ describe("create_cortical_from_labels verbose and LUT paths", {
       labels,
       input_lut = bad_lut,
       atlas_name = "test_atlas",
-      steps = 1,
       verbose = FALSE
     )
 
     expect_null(atlas$palette)
   })
 
-  it("passes correct atlas_name and components to cortical_pipeline", {
+  it("passes correct atlas_name and components to cortical_project_and_build", {
     captured_args <- NULL
     local_mocked_bindings(
       check_fs = function(abort = FALSE) invisible(TRUE),
       check_magick = function() invisible(TRUE),
       ggseg_atlas = function(...) structure(list(...), class = "ggseg_atlas"),
       ggseg_data_cortical = function(...) list(...),
-      cortical_pipeline = function(...) {
+      cortical_project_and_build = function(...) {
         captured_args <<- list(...)
         structure(list(), class = "ggseg_atlas")
       }
@@ -988,13 +818,11 @@ describe("create_cortical_from_labels verbose and LUT paths", {
     result <- create_cortical_from_labels(
       labels,
       atlas_name = "test_atlas",
-      steps = 1:8,
       verbose = FALSE
     )
 
     expect_s3_class(result, "ggseg_atlas")
     expect_equal(captured_args$atlas_name, "test_atlas")
-    expect_s3_class(captured_args$atlas_3d, "ggseg_atlas")
     expect_true(nrow(captured_args$components$core) > 0)
   })
 })
@@ -1008,7 +836,7 @@ describe("create_cortical_from_labels hemi fallback", {
       check_magick = function() invisible(TRUE),
       ggseg_atlas = function(...) structure(list(...), class = "ggseg_atlas"),
       ggseg_data_cortical = function(...) list(...),
-      cortical_pipeline = function(...) {
+      cortical_project_and_build = function(...) {
         args <- list(...)
         captured_hemisphere <<- args$hemisphere
         structure(list(), class = "ggseg_atlas")
@@ -1033,7 +861,6 @@ describe("create_cortical_from_labels hemi fallback", {
     create_cortical_from_labels(
       c(nohemi_file),
       atlas_name = "test_nohemi",
-      steps = 1:8,
       verbose = FALSE
     )
 
@@ -1043,7 +870,7 @@ describe("create_cortical_from_labels hemi fallback", {
 
 
 describe("create_cortical_from_gifti verbose", {
-  it("emits 'from GIFTI' message when verbose and steps > 1", {
+  it("emits 'from GIFTI' message when verbose", {
     skip_if_not_installed("freesurferformats")
 
     mock_annot <- list(
@@ -1069,7 +896,9 @@ describe("create_cortical_from_gifti verbose", {
     local_mocked_bindings(
       check_fs = function(...) invisible(TRUE),
       check_magick = function() invisible(TRUE),
-      cortical_pipeline = function(...) structure(list(), class = "ggseg_atlas")
+      cortical_project_and_build = function(...) {
+        structure(list(), class = "ggseg_atlas")
+      }
     )
 
     tmp <- withr::local_tempfile(pattern = "lh.test", fileext = ".label.gii")
@@ -1080,7 +909,6 @@ describe("create_cortical_from_gifti verbose", {
       create_cortical_from_gifti(
         gifti_files = tmp,
         atlas_name = "test_gifti",
-        steps = 1:2,
         verbose = TRUE
       ),
       "from GIFTI"
@@ -1090,7 +918,7 @@ describe("create_cortical_from_gifti verbose", {
 
 
 describe("create_cortical_from_cifti verbose", {
-  it("emits 'from CIFTI' message when verbose and steps > 1", {
+  it("emits 'from CIFTI' message when verbose", {
     skip_if_not_installed("ciftiTools")
 
     n <- 10242L
@@ -1122,7 +950,9 @@ describe("create_cortical_from_cifti verbose", {
     local_mocked_bindings(
       check_fs = function(...) invisible(TRUE),
       check_magick = function() invisible(TRUE),
-      cortical_pipeline = function(...) structure(list(), class = "ggseg_atlas")
+      cortical_project_and_build = function(...) {
+        structure(list(), class = "ggseg_atlas")
+      }
     )
 
     tmp <- withr::local_tempfile(fileext = ".dlabel.nii")
@@ -1133,7 +963,6 @@ describe("create_cortical_from_cifti verbose", {
       create_cortical_from_cifti(
         cifti_file = tmp,
         atlas_name = "test_cifti",
-        steps = 1:2,
         verbose = TRUE
       ),
       "from CIFTI"
@@ -1176,7 +1005,9 @@ describe("create_cortical_from_neuromaps verbose", {
     local_mocked_bindings(
       check_fs = function(...) invisible(TRUE),
       check_magick = function() invisible(TRUE),
-      cortical_pipeline = function(...) structure(list(), class = "ggseg_atlas")
+      cortical_project_and_build = function(...) {
+        structure(list(), class = "ggseg_atlas")
+      }
     )
 
     withr::local_options(ggseg.extra.output_dir = withr::local_tempdir())
@@ -1186,7 +1017,6 @@ describe("create_cortical_from_neuromaps verbose", {
         source = "test",
         desc = "testdesc",
         atlas_name = "test_neuromaps",
-        steps = 1:2,
         verbose = TRUE
       ),
       "Fetching neuromaps"
@@ -1197,7 +1027,6 @@ describe("create_cortical_from_neuromaps verbose", {
         source = "test",
         desc = "testdesc",
         atlas_name = "test_neuromaps",
-        steps = 1:2,
         verbose = TRUE
       ),
       "from neuromaps"
@@ -1229,7 +1058,9 @@ describe("create_cortical_from_neuromaps verbose", {
       check_fs = function(...) invisible(TRUE),
       check_magick = function() invisible(TRUE),
       read_neuromaps_volume = function(...) mock_annot,
-      cortical_pipeline = function(...) structure(list(), class = "ggseg_atlas")
+      cortical_project_and_build = function(...) {
+        structure(list(), class = "ggseg_atlas")
+      }
     )
 
     withr::local_options(ggseg.extra.output_dir = withr::local_tempdir())
@@ -1239,7 +1070,6 @@ describe("create_cortical_from_neuromaps verbose", {
         source = "test",
         desc = "vol",
         atlas_name = "test_vol",
-        steps = 1:2,
         verbose = TRUE
       ),
       "Volume annotation detected"

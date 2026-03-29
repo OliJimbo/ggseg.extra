@@ -325,11 +325,10 @@ describe("create_wholebrain_from_volume pipeline flow", {
       validate_cortical_config = function(...) {
         list(
           output_dir = test_dir, verbose = FALSE, cleanup = FALSE,
-          skip_existing = FALSE, tolerance = 1, smoothness = 5,
-          snapshot_dim = 800, steps = 1L:8L
+          skip_existing = FALSE, tolerance = 1
         )
       },
-      cortical_resolve_step1 = function(...) {
+      cortical_read_data = function(...) {
         captured_step1_args <<- list(...)
         list(
           atlas_3d = structure(
@@ -350,7 +349,9 @@ describe("create_wholebrain_from_volume pipeline flow", {
           )
         )
       },
-      cortical_pipeline = function(atlas_3d, ...) atlas_3d
+      cortical_project_and_build = function(...) {
+        structure(list(), class = "ggseg_atlas")
+      }
     )
 
     vol_file <- withr::local_tempfile(fileext = ".nii.gz")
@@ -757,11 +758,10 @@ describe("wholebrain_run_cortical verbose logging", {
       validate_cortical_config = function(...) {
         list(
           output_dir = test_dir, verbose = TRUE, cleanup = FALSE,
-          skip_existing = FALSE, tolerance = 1, smoothness = 5,
-          snapshot_dim = 800, steps = 1L
+          skip_existing = FALSE, tolerance = 1
         )
       },
-      cortical_resolve_step1 = function(...) {
+      cortical_read_data = function(...) {
         list(
           atlas_3d = structure(
             list(core = data.frame(hemi = "left", region = "a")),
@@ -769,6 +769,9 @@ describe("wholebrain_run_cortical verbose logging", {
           ),
           components = list()
         )
+      },
+      cortical_project_and_build = function(...) {
+        structure(list(), class = "ggseg_atlas")
       }
     )
 
@@ -1325,11 +1328,10 @@ describe("wholebrain_run_cortical verbose progress_done", {
       validate_cortical_config = function(...) {
         list(
           output_dir = test_dir, verbose = TRUE, cleanup = FALSE,
-          skip_existing = FALSE, tolerance = 1, smoothness = 5,
-          snapshot_dim = 800, steps = 1L:8L
+          skip_existing = FALSE, tolerance = 1
         )
       },
-      cortical_resolve_step1 = function(...) {
+      cortical_read_data = function(...) {
         list(
           atlas_3d = mock_atlas,
           components = list(
@@ -1339,7 +1341,9 @@ describe("wholebrain_run_cortical verbose progress_done", {
           )
         )
       },
-      cortical_pipeline = function(atlas_3d, ...) atlas_3d
+      cortical_project_and_build = function(...) {
+        structure(list(), class = "ggseg_atlas")
+      }
     )
 
     config <- list(

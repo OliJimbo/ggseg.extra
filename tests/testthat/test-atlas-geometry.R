@@ -224,6 +224,9 @@ describe("extract_contours", {
     local_mocked_bindings(
       rast = function(f) list(file = f),
       global = function(r, ...) data.frame(max = 255),
+      .package = "terra"
+    )
+    local_mocked_bindings(
       get_contours = function(r, max_val, ...) {
         sf::st_sf(
           geometry = sf::st_sfc(sf::st_polygon(list(matrix(
@@ -255,6 +258,9 @@ describe("extract_contours", {
     local_mocked_bindings(
       rast = function(f) list(file = f),
       global = function(r, ...) data.frame(max = 0),
+      .package = "terra"
+    )
+    local_mocked_bindings(
       get_contours = function(r, max_val, ...) {
         captured_max_val <<- max_val
         sf::st_sf(
@@ -285,6 +291,9 @@ describe("extract_contours", {
     local_mocked_bindings(
       rast = function(f) list(file = f),
       global = function(r, ...) data.frame(max = 255),
+      .package = "terra"
+    )
+    local_mocked_bindings(
       get_contours = function(...) {
         sf::st_sf(
           geometry = sf::st_sfc(sf::st_polygon(list(matrix(

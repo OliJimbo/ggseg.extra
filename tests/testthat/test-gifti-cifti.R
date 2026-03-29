@@ -266,7 +266,7 @@ describe("read_cifti_annotation", {
 
 
 describe("create_cortical_from_gifti", {
-  it("creates ggseg_atlas with steps = 1", {
+  it("creates ggseg_atlas from GIFTI files", {
     skip_if_not_installed("freesurferformats")
 
     mock_annot <- list(
@@ -302,7 +302,6 @@ describe("create_cortical_from_gifti", {
     result <- create_cortical_from_gifti(
       gifti_files = c(lh, rh),
       atlas_name = "test_gifti",
-      steps = 1,
       verbose = FALSE,
       cleanup = FALSE
     )
@@ -507,7 +506,7 @@ describe("read_neuromaps_annotation", {
 
 
 describe("create_cortical_from_cifti", {
-  it("creates ggseg_atlas with steps = 1", {
+  it("creates ggseg_atlas from CIFTI file", {
     skip_if_not_installed("ciftiTools")
 
     n <- 10242L
@@ -547,7 +546,6 @@ describe("create_cortical_from_cifti", {
     result <- create_cortical_from_cifti(
       cifti_file = tmp,
       atlas_name = "test_cifti",
-      steps = 1,
       verbose = FALSE,
       cleanup = FALSE
     )
@@ -596,12 +594,12 @@ describe("create_cortical_from_cifti", {
     writeLines("mock", tmp)
 
     result <- create_cortical_from_cifti(
-      cifti_file = tmp, steps = 1, verbose = FALSE, cleanup = FALSE
+      cifti_file = tmp, verbose = FALSE, cleanup = FALSE
     )
     expect_true(grepl("my_atlas", result$atlas))
   })
 
-  it("calls cortical_pipeline for steps > 1", {
+  it("calls cortical_project_and_build", {
     skip_if_not_installed("ciftiTools")
 
     pipeline_called <- FALSE
@@ -630,7 +628,7 @@ describe("create_cortical_from_cifti", {
     local_mocked_bindings(
       check_fs = function(...) invisible(TRUE),
       check_magick = function() invisible(TRUE),
-      cortical_pipeline = function(...) {
+      cortical_project_and_build = function(...) {
         pipeline_called <<- TRUE
         structure(list(), class = "ggseg_atlas")
       }
@@ -641,7 +639,7 @@ describe("create_cortical_from_cifti", {
     withr::local_options(ggseg.extra.output_dir = withr::local_tempdir())
 
     create_cortical_from_cifti(
-      cifti_file = tmp, steps = 1:8, verbose = FALSE
+      cifti_file = tmp, verbose = FALSE
     )
     expect_true(pipeline_called)
   })
@@ -681,12 +679,12 @@ describe("create_cortical_from_gifti", {
     writeLines("mock", tmp)
 
     result <- create_cortical_from_gifti(
-      gifti_files = tmp, steps = 1, verbose = FALSE, cleanup = FALSE
+      gifti_files = tmp, verbose = FALSE, cleanup = FALSE
     )
     expect_true(grepl("myatlas", result$atlas))
   })
 
-  it("calls cortical_pipeline for steps > 1", {
+  it("calls cortical_project_and_build", {
     skip_if_not_installed("freesurferformats")
 
     pipeline_called <- FALSE
@@ -713,7 +711,7 @@ describe("create_cortical_from_gifti", {
     local_mocked_bindings(
       check_fs = function(...) invisible(TRUE),
       check_magick = function() invisible(TRUE),
-      cortical_pipeline = function(...) {
+      cortical_project_and_build = function(...) {
         pipeline_called <<- TRUE
         structure(list(), class = "ggseg_atlas")
       }
@@ -724,7 +722,7 @@ describe("create_cortical_from_gifti", {
     withr::local_options(ggseg.extra.output_dir = withr::local_tempdir())
 
     create_cortical_from_gifti(
-      gifti_files = tmp, steps = 1:8, verbose = FALSE
+      gifti_files = tmp, verbose = FALSE
     )
     expect_true(pipeline_called)
   })

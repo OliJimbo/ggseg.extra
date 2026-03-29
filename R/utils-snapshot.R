@@ -12,8 +12,6 @@
 #' @param fuzz Fuzz factor for transparency (default 10)
 #' @param skip_existing If TRUE, skip if output file already exists
 #' @noRd
-#' @importFrom magick image_read image_convert
-#'   image_transparent image_morphology image_write
 process_snapshot_image <- function(
   input_file,
   output_file,
@@ -22,16 +20,19 @@ process_snapshot_image <- function(
   fuzz = 10,
   skip_existing = get_skip_existing()
 ) {
+  rlang::check_installed("magick",
+    reason = "for snapshot image processing"
+  )
   if (skip_existing && file.exists(output_file)) {
     return(invisible(output_file))
   }
 
-  img <- image_read(input_file) |>
-    image_convert() |>
-    image_transparent(color = transparent_color, fuzz = fuzz)
+  img <- magick::image_read(input_file) |>
+    magick::image_convert() |>
+    magick::image_transparent(color = transparent_color, fuzz = fuzz)
 
   if (!is.null(dilate) && dilate > 0) {
-    img <- image_morphology(
+    img <- magick::image_morphology(
       img,
       method = "DilateI",
       kernel = "diamond",
@@ -39,7 +40,7 @@ process_snapshot_image <- function(
     )
   }
 
-  image_write(image = img, path = output_file)
+  magick::image_write(image = img, path = output_file)
   invisible(output_file)
 }
 
@@ -235,7 +236,7 @@ run_cmd <- function(cmd, verbose = get_verbose(), no_ui = FALSE) {
       cmd <- paste("fsxvfb", cmd)
     }
   }
-  full_cmd <- paste0(get_fs(), cmd)
+  full_cmd <- paste0(freesurfer::get_fs(), cmd)
   suppress <- verbose < 2
   exit_code <- system(
     paste("bash -c", shQuote(full_cmd)),
@@ -252,7 +253,6 @@ run_cmd <- function(cmd, verbose = get_verbose(), no_ui = FALSE) {
 # Contour extraction ----
 
 #' @noRd
-#' @importFrom terra global rast as.polygons
 #' @importFrom sf st_as_sf st_is_empty st_geometry
 get_contours <- function(
   raster_object,
@@ -260,7 +260,10 @@ get_contours <- function(
   vertex_size_limits = c(3 * 10^6, 3 * 10^7),
   verbose = get_verbose() # nolint: object_usage_linter
 ) {
-  mx <- global(raster_object, fun = "max", na.rm = TRUE)[1, 1]
+  rlang::check_installed("terra",
+    reason = "for contour extraction"
+  )
+  mx <- terra::global(raster_object, fun = "max", na.rm = TRUE)[1, 1]
 
   if (mx < max_val) {
     return(NULL)
@@ -269,7 +272,7 @@ get_contours <- function(
   tmp_rst <- raster_object
   tmp_rst[tmp_rst == 0] <- NA
 
-  contours_raw <- as.polygons(tmp_rst, values = TRUE, na.rm = TRUE)
+  contours_raw <- terra::as.polygons(tmp_rst, values = TRUE, na.rm = TRUE)
 
   coords <- st_as_sf(contours_raw)
 
@@ -290,22 +293,24 @@ get_contours <- function(
 #' @param interim_file interim image path
 #' @param skip_existing If TRUE, skip if output file already exists
 #' @noRd
-#' @importFrom magick image_read image_convert image_transparent image_write
 isolate_region <- function(
   input_file,
   output_file,
   interim_file = tempfile(),
   skip_existing = get_skip_existing()
 ) {
+  rlang::check_installed("magick",
+    reason = "for snapshot image processing"
+  )
   if (skip_existing && file.exists(output_file)) {
     return(invisible(output_file))
   }
 
-  tmp <- image_read(input_file)
-  tmp <- image_convert(tmp, "png")
+  tmp <- magick::image_read(input_file)
+  tmp <- magick::image_convert(tmp, "png")
 
-  tmp <- image_transparent(tmp, "white", fuzz = 30)
-  image_write(tmp, interim_file)
+  tmp <- magick::image_transparent(tmp, "white", fuzz = 30)
+  magick::image_write(tmp, interim_file)
 
   if (has_magick()) {
     system2(

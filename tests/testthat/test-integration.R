@@ -6,7 +6,6 @@ describe("integration tests", {
     atlas <- create_cortical_from_labels(
       labels,
       atlas_name = "integration_test",
-      steps = 1,
       verbose = FALSE
     )
 
@@ -26,7 +25,6 @@ describe("integration tests", {
 
     atlas <- create_cortical_from_annotation(
       input_annot = annot_files,
-      steps = 1,
       verbose = FALSE
     )
 

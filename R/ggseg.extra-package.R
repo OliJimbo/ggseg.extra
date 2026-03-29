@@ -46,7 +46,8 @@ set_tutorial_options <- function() {
     freesurfer.verbose = FALSE,
     progressr.enabled = TRUE
   )
-  freesurfer::have_fs() && has_magick()
+  rlang::is_installed("freesurfer") &&
+    freesurfer::have_fs() && has_magick()
 }
 # nocov end
 

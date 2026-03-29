@@ -50,7 +50,7 @@ contours). Defaults to \code{\link[=tempdir]{tempdir()}}.}
 produce simpler shapes with fewer vertices (typical range: 0.1--2).
 Passed to \code{\link[sf:geos_unary]{sf::st_simplify()}}.
 If not specified, uses \code{options("ggseg.extra.tolerance")} or the
-\code{GGSEG_EXTRA_TOLERANCE} environment variable. Default is 0.5.}
+\code{GGSEG_EXTRA_TOLERANCE} environment variable. Default is 1.}
 
 \item{smooth_refinements}{Number of Chaikin corner-cutting refinements
 to apply to 2D polygons. Higher values produce smoother region

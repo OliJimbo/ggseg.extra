@@ -291,7 +291,8 @@ describe("process_snapshot_image", {
       image_read = function(...) {
         read_called <<- TRUE
         NULL
-      }
+      },
+      .package = "magick"
     )
 
     result <- process_snapshot_image(input, output, skip_existing = TRUE)
@@ -319,7 +320,8 @@ describe("process_snapshot_image", {
       image_write = function(image, path, ...) {
         write_called <<- TRUE
         file.create(path)
-      }
+      },
+      .package = "magick"
     )
 
     result <- process_snapshot_image(input, output, skip_existing = FALSE)
@@ -351,7 +353,8 @@ describe("process_snapshot_image", {
       },
       image_write = function(image, path, ...) {
         file.create(path)
-      }
+      },
+      .package = "magick"
     )
 
     process_snapshot_image(input, output, dilate = 2, skip_existing = FALSE)
@@ -377,7 +380,8 @@ describe("process_snapshot_image", {
       },
       image_write = function(image, path, ...) {
         file.create(path)
-      }
+      },
+      .package = "magick"
     )
 
     process_snapshot_image(input, output, dilate = NULL, skip_existing = FALSE)
@@ -431,7 +435,8 @@ describe("run_cmd", {
   it("runs commands successfully", {
     skip_on_os("windows")
     local_mocked_bindings(
-      get_fs = function() ""
+      get_fs = function() "",
+      .package = "freesurfer"
     )
 
     result <- run_cmd("echo test", verbose = FALSE, no_ui = FALSE)
@@ -441,7 +446,8 @@ describe("run_cmd", {
   it("aborts on non-zero exit code", {
     skip_on_os("windows")
     local_mocked_bindings(
-      get_fs = function() ""
+      get_fs = function() "",
+      .package = "freesurfer"
     )
 
     expect_error(
@@ -455,7 +461,8 @@ describe("run_cmd", {
 describe("get_contours", {
   it("returns NULL when max value < max_val", {
     local_mocked_bindings(
-      global = function(x, ...) data.frame(max = 100)
+      global = function(x, ...) data.frame(max = 100),
+      .package = "terra"
     )
 
     result <- get_contours("fake_raster", max_val = 255)
@@ -471,7 +478,8 @@ describe("get_contours", {
       as.polygons = function(...) {
         as_polygons_called <<- TRUE
         "mock_poly"
-      }
+      },
+      .package = "terra"
     )
 
     local_mocked_bindings(
@@ -519,7 +527,8 @@ describe("isolate_region", {
       image_read = function(...) {
         read_called <<- TRUE
         NULL
-      }
+      },
+      .package = "magick"
     )
 
     result <- isolate_region(input, output, skip_existing = TRUE)
@@ -540,6 +549,9 @@ describe("isolate_region", {
       image_convert = function(...) sentinel,
       image_transparent = function(...) sentinel,
       image_write = function(...) interim,
+      .package = "magick"
+    )
+    local_mocked_bindings(
       has_magick = function() FALSE
     )
 
@@ -689,13 +701,16 @@ describe("get_contours full processing path", {
     local_mocked_bindings(
       global = function(x, ...) data.frame(max = 255),
       as.polygons = function(...) mock_sf,
-      st_as_sf = function(...) mock_sf,
-      to_coords = function(coords, n) mock_coords,
-      coords2sf = function(coords, limits) mock_result_sf
+      .package = "terra"
     )
     local_mocked_bindings(
+      st_as_sf = function(...) mock_sf,
       st_is_empty = function(...) FALSE,
       .package = "sf"
+    )
+    local_mocked_bindings(
+      to_coords = function(coords, n) mock_coords,
+      coords2sf = function(coords, limits) mock_result_sf
     )
 
     result <- get_contours(rast_obj, max_val = 255)
@@ -719,7 +734,8 @@ describe("get_contours full processing path", {
 
     local_mocked_bindings(
       global = function(x, ...) data.frame(max = 255),
-      as.polygons = function(...) nonempty_sf
+      as.polygons = function(...) nonempty_sf,
+      .package = "terra"
     )
     local_mocked_bindings(
       st_as_sf = function(...) nonempty_sf,
