@@ -112,7 +112,6 @@
 #'   `ggseg_atlas` object (or NULL if no regions of that type exist).
 #' @export
 #' @importFrom dplyr tibble bind_rows filter
-#' @importFrom freesurfer have_fs fs_subj_dir
 #' @importFrom grDevices rgb
 #' @importFrom tools file_path_sans_ext
 #'
@@ -771,13 +770,10 @@ wholebrain_run_cortical <- function(
     verbose = config$verbose,
     cleanup = FALSE,
     skip_existing = config$skip_existing,
-    tolerance = config$tolerance,
-    smoothness = config$smoothness,
-    snapshot_dim = NULL,
-    steps = NULL
+    tolerance = config$tolerance
   )
 
-  step1 <- cortical_resolve_step1(
+  step1 <- cortical_read_data(
     cortical_config, cortical_dirs, cortical_name,
     read_fn = function() cortical_data,
     step_label = "Reading projected cortical data",
@@ -790,13 +786,11 @@ wholebrain_run_cortical <- function(
     USE.NAMES = FALSE
   )
 
-  atlas <- cortical_pipeline(
-    atlas_3d = step1$atlas_3d,
+  atlas <- cortical_project_and_build(
     components = step1$components,
     atlas_name = cortical_name,
     hemisphere = hemi_short,
     views = views,
-    region_snapshot_fn = cortical_region_snapshots,
     config = cortical_config,
     dirs = cortical_dirs,
     start_time = Sys.time()
@@ -824,12 +818,10 @@ wholebrain_run_subcortical <- function(
 
   subcort_lut <- file.path(dirs$base, "subcort_lut.txt")
   required_cols <- c("idx", "label", "R", "G", "B", "A")
-  missing_cols <- setdiff(required_cols, names(subcort_ct))
-  if (length(missing_cols) > 0) {
-    cli::cli_abort(
-      "Colortable missing required columns: {.val {missing_cols}}"
-    )
+  for (col in c("R", "G", "B")) {
+    if (!col %in% names(subcort_ct)) subcort_ct[[col]] <- 0L
   }
+  if (!"A" %in% names(subcort_ct)) subcort_ct[["A"]] <- 0L
   write_ctab(subcort_ct[, required_cols], subcort_lut)
 
   cortical_idx <- colortable$idx[
