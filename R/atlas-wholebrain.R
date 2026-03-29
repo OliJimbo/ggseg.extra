@@ -818,10 +818,10 @@ wholebrain_run_subcortical <- function(
 
   subcort_lut <- file.path(dirs$base, "subcort_lut.txt")
   required_cols <- c("idx", "label", "R", "G", "B", "A")
-  for (col in c("R", "G", "B")) {
+  for (col in c("R", "G", "B", "A")) {
     if (!col %in% names(subcort_ct)) subcort_ct[[col]] <- 0L
+    subcort_ct[[col]][is.na(subcort_ct[[col]])] <- 0L
   }
-  if (!"A" %in% names(subcort_ct)) subcort_ct[["A"]] <- 0L
   write_ctab(subcort_ct[, required_cols], subcort_lut)
 
   cortical_idx <- colortable$idx[
