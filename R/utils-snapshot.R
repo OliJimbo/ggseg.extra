@@ -222,7 +222,7 @@ magick_version <- function() {
 
 #' @noRd
 run_cmd <- function(cmd, verbose = get_verbose(), no_ui = FALSE) {
-# Clean trailing semicolon before execution
+  # Clean trailing semicolon before execution
   cmd_clean <- sub(";\\s*$", "", cmd)
   if (!nzchar(trimws(cmd_clean))) {
     cli::cli_abort("Command string is empty or contains only semicolons")
