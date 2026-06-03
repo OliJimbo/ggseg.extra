@@ -455,8 +455,42 @@ describe("run_cmd", {
       "FreeSurfer command failed"
     )
   })
-})
 
+  it("removes trailing semicolon from command", {
+    skip_on_os("windows")
+    local_mocked_bindings(
+      get_fs = function() "",
+      .package = "freesurfer"
+    )
+
+    result <- run_cmd("echo test;", verbose = FALSE, no_ui = FALSE)
+    expect_equal(result, 0L)
+  })
+
+  it("handles command with trailing semicolon and whitespace", {
+    skip_on_os("windows")
+    local_mocked_bindings(
+      get_fs = function() "",
+      .package = "freesurfer"
+    )
+
+    result <- run_cmd("echo test; \t", verbose = FALSE, no_ui = FALSE)
+    expect_equal(result, 0L)
+  })
+
+  it("aborts when command becomes empty after cleanup", {
+    skip_on_os("windows")
+    local_mocked_bindings(
+      get_fs = function() "",
+      .package = "freesurfer"
+    )
+
+    expect_error(
+      run_cmd(";", verbose = FALSE, no_ui = FALSE),
+      "Command string is empty"
+    )
+  })
+})
 
 describe("get_contours", {
   it("returns NULL when max value < max_val", {
